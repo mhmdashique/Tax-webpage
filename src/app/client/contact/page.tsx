@@ -1,0 +1,1 @@
+﻿"use client"; import { SimplePage } from "@/components/entities"; export default function P(){ return <SimplePage title="Contact Accountant" sub="Message your accountant directly." ctaHref="/client/messages" ctaLabel="Open messages"/>; }

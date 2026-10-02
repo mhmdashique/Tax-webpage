@@ -1,0 +1,1 @@
+﻿"use client"; import { SimplePage } from "@/components/entities"; export default function P(){ return <SimplePage title="Help & Support" sub="Guides, shortcuts and support contact. Email support@taxdesk.io for help."/>; }

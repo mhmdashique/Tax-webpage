@@ -1,0 +1,1 @@
+﻿"use client"; import { SimplePage } from "@/components/entities"; export default function P(){ return <SimplePage title="Escalations" sub="No open escalations. Raised items from employees appear here with Confirm resolve." ctaHref="/admin/clients" ctaLabel="View clients"/>; }
