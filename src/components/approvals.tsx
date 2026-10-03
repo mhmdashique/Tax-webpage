@@ -343,11 +343,14 @@ export function ApprovalManager({ compact = false }: { compact?: boolean }) {
     setSyncing(true);
     try {
       const r = await fetch("/api/admin/approvals/sync", { method: "POST" });
-      const j = (await r.json().catch(() => ({}))) as { error?: string; synced?: number; adopted?: number };
+      const j = (await r.json().catch(() => ({}))) as { error?: string; synced?: number; adopted?: number; linked?: number };
       if (!r.ok) throw new Error(j.error ?? "Sync failed");
       const total = (j.synced ?? 0) + (j.adopted ?? 0);
-      if (total > 0) {
-        setToast({ msg: `✓ ${total} signup${total === 1 ? "" : "s"} pulled into the queue`, ok: true });
+      const parts: string[] = [];
+      if (total > 0) parts.push(`${total} signup${total === 1 ? "" : "s"} pulled into the queue`);
+      if ((j.linked ?? 0) > 0) parts.push(`${j.linked} company record${j.linked === 1 ? "" : "s"} linked`);
+      if (parts.length > 0) {
+        setToast({ msg: `✓ ${parts.join(" · ")}`, ok: true });
       } else {
         setToast({ msg: "No missing signups found — the queue is complete.", ok: true });
       }

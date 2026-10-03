@@ -517,24 +517,32 @@ function StaffDocumentsView({ role }: { role: "admin" | "employee" }) {
           ])} />
         )}
       </Card>
-      <Modal open={openRow !== null} onClose={() => setOpenId(null)} title={openRow ? openRow.d.file_name : "Document"}>
+      <Modal open={openRow !== null} onClose={() => setOpenId(null)} title={openRow ? openRow.d.file_name : "Document"} size="xl">
         {openRow && (
-          <div className="space-y-4">
-            <div className="grid gap-2 text-sm sm:grid-cols-2">
+          <div className="space-y-6">
+            <div className="flex items-start gap-4 rounded-2xl border p-4" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl" style={{ background: "var(--accent-tint)", color: "var(--accent)" }}>
+                <FileText size={22} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="break-all text-base font-bold">{openRow.d.file_name}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge tone={reviewTone(openRow.status)}>{reviewLabel(openRow.status)}</Badge>
+                  <Badge tone="neutral">v{openRow.versionNo}{openRow.versionNo > 1 ? " · Re-uploaded" : ""}</Badge>
+                  {openRow.isNew && <Badge tone="warning">New for review</Badge>}
+                </div>
+              </div>
+              <Button variant="ghost" className="shrink-0 px-4 py-2.5 text-sm"
+                onClick={() => downloadStoragePath(openRow.d.id, openRow.d.storage_path ?? (!/^https?:\/\//.test(openRow.d.file_url) ? openRow.d.file_url : null), openRow.d.file_name, openRow.d.file_url)}>
+                <Download size={15} /> Download latest
+              </Button>
+            </div>
+            <div className="grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
               <p><span style={{ color: "var(--text-2)" }}>Client: </span><span className="font-semibold">{openRow.clientName}</span></p>
               <p><span style={{ color: "var(--text-2)" }}>Country: </span><span className="font-semibold">{openRow.country}</span></p>
               <p><span style={{ color: "var(--text-2)" }}>Tax: </span><span className="font-semibold">{openRow.taxLabel} · {openRow.period}</span></p>
-              <p><span style={{ color: "var(--text-2)" }}>Version: </span><span className="font-semibold">v{openRow.versionNo}{openRow.versionNo > 1 ? " (Re-uploaded)" : ""}</span></p>
               <p><span style={{ color: "var(--text-2)" }}>Uploaded by: </span><span className="font-semibold">{openRow.uploader}</span></p>
               <p><span style={{ color: "var(--text-2)" }}>Uploaded: </span><span className="font-semibold">{(openRow.d.created_at ?? "").slice(0, 16).replace("T", " ")}</span></p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge tone={reviewTone(openRow.status)}>{reviewLabel(openRow.status)}</Badge>
-              {openRow.isNew && <Badge tone="warning">New for review</Badge>}
-              <Button variant="ghost" className="ml-auto px-3 py-1.5 text-xs"
-                onClick={() => downloadStoragePath(openRow.d.id, openRow.d.storage_path ?? (!/^https?:\/\//.test(openRow.d.file_url) ? openRow.d.file_url : null), openRow.d.file_name, openRow.d.file_url)}>
-                <Download size={13} /> Download latest
-              </Button>
             </div>
             {openRow.item?.rejection_reason && openRow.status === "rejected" && (
               <p className="rounded-xl px-3 py-2 text-xs font-medium" style={{ background: "var(--danger-bg)", color: "var(--danger-tx)" }}>

@@ -173,7 +173,29 @@ export async function POST(req: Request) {
     }]).then(() => {}, () => {});
   }
 
-  return NextResponse.json({ success: true, synced, adopted, found: orphans.length, failed });
+  // Link company records for client logins that have none: without a clients
+  // row linked via linked_user_id, uploads fail with "no company record".
+  // Match by email first (legacy rows), otherwise create the company row.
+  let linked = 0;
+  const { data: clientUsers } = await svc
+    .from("users")
+    .select("id, email, name")
+    .eq("firm_id", firmId)
+    .eq("role", "client");
+  for (const cu of ((clientUsers ?? []) as { id: string; email: string; name: string }[])) {
+    const { data: hasRow } = await svc
+      .from("clients")
+      .select("id")
+      .eq("firm_id", firmId)
+      .eq("linked_user_id", cu.id)
+      .limit(1)
+      .maybeSingle();
+    if (hasRow) continue;
+    await ensureClientRow(svc, cu.id, cu.name, cu.email.toLowerCase());
+    linked++;
+  }
+
+  return NextResponse.json({ success: true, synced, adopted, linked, found: orphans.length, failed });
 }
 
 /**

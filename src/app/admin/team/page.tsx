@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { Card, EmptyState, Badge, Button, DataTable } from "@/components/ui";
@@ -128,7 +128,26 @@ export default function TeamPage() {
           </form>
         </Card>
         <Card className="lg:col-span-2">
-          <h2 className="mb-3 flex items-center gap-2 font-semibold">Firm logins <ApprovalCountBadge /></h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 font-semibold">Firm logins <ApprovalCountBadge /></h2>
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                setMsg(""); setErr("");
+                try {
+                  const r = await fetch("/api/admin/approvals/sync", { method: "POST" });
+                  const j = await r.json();
+                  if (!r.ok) throw new Error(j.error ?? "Sync failed");
+                  notify(`Synced: ${j.synced} found, ${j.adopted} adopted, ${j.linked} company records repaired.`, true);
+                  mutate();
+                } catch (e: any) {
+                  notify(e.message ?? "Sync failed", false);
+                }
+              }}
+            >
+              Sync signups
+            </Button>
+          </div>
           {isLoading ? <div className="skeleton h-40" /> : rows.length === 0 ? (
             <EmptyState icon={<Users size={22} />} title="No team members yet — create the first login on the left" />
           ) : (

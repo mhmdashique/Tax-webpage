@@ -91,15 +91,16 @@ export function EmptyState({ icon, title, action }: { icon: React.ReactNode; tit
   );
 }
 
-export function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
+export function Modal({ open, onClose, title, children, size = "md" }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; size?: "md" | "xl" }) {
   if (!open) return null;
+  const wide = size === "xl";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="card relative w-full max-w-lg p-6" style={{ background: "var(--surface-elev)", borderRadius: 20 }}>
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold">{title}</h3>
-          <button onClick={onClose} className="btn-ghost px-2 py-1" aria-label="Close">✕</button>
+      <div className="card relative w-full overflow-y-auto" style={{ background: "var(--surface-elev)", borderRadius: 20, maxWidth: wide ? 768 : 512, padding: wide ? 32 : 24, maxHeight: "calc(100vh - 3rem)" }}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className={wide ? "min-w-0 flex-1 break-all text-lg font-semibold" : "text-base font-semibold"}>{title}</h3>
+          <button onClick={onClose} className="btn-ghost shrink-0 px-2 py-1" aria-label="Close">✕</button>
         </div>
         {children}
       </div>

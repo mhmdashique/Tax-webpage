@@ -109,13 +109,30 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
     );
   }
 
-  // If client role and an accountant was chosen, link in the same step.
-  if (finalRole === "client" && parsed.data.assigned_employee_id) {
-    await svc
+  // If client role, ensure the client company profile is created!
+  if (finalRole === "client") {
+    const { data: existingClient } = await svc
       .from("clients")
-      .update({ assigned_employee_id: parsed.data.assigned_employee_id })
+      .select("id")
       .eq("linked_user_id", userId)
-      .then(() => {}, () => {});
+      .maybeSingle();
+
+    if (!existingClient) {
+      await svc.from("clients").insert([{
+        firm_id: firmId,
+        linked_user_id: userId,
+        name: t.name || t.email.split("@")[0] || "Client Profile",
+        email: t.email,
+        type: "individual",
+        assigned_employee_id: parsed.data.assigned_employee_id || null,
+      }]).then(() => {}, () => {});
+    } else if (parsed.data.assigned_employee_id) {
+      await svc
+        .from("clients")
+        .update({ assigned_employee_id: parsed.data.assigned_employee_id })
+        .eq("id", existingClient.id)
+        .then(() => {}, () => {});
+    }
   }
 
   // Activity log (best effort).

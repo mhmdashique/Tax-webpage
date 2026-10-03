@@ -38,9 +38,21 @@ export function useMyClient() {
     const { data: direct } = await sb.from("clients").select("*").eq("linked_user_id", user.id).limit(1).maybeSingle();
     if (direct) return direct as Client;
     const { data: link } = await sb.from("client_users").select("client_id").eq("user_id", user.id).limit(1).maybeSingle();
-    if (!link) return null;
-    const { data: c } = await sb.from("clients").select("*").eq("id", (link as { client_id: string }).client_id).maybeSingle();
-    return (c as Client | null) ?? null;
+    if (link) {
+      const { data: c } = await sb.from("clients").select("*").eq("id", (link as { client_id: string }).client_id).maybeSingle();
+      if (c) return c as Client;
+    }
+    
+    // Auto-fix using standard API route
+    try {
+      await fetch("/api/fix-client", { method: "POST" });
+      const { data: retry } = await sb.from("clients").select("*").eq("linked_user_id", user.id).limit(1).maybeSingle();
+      if (retry) return retry as Client;
+    } catch (e) {
+      console.error("Auto-fix failed", e);
+    }
+    
+    return null;
   });
 }
 

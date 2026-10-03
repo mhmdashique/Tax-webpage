@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { Card, EmptyState, Badge, Button, Modal } from "./ui";
 import { createClient } from "@/lib/supabase/client";
 import {
-  useMyClient, useJurisdictions, useTaxTypes, useJurisdictionTaxType,
+  useMyClient, useCurrentUser, useJurisdictions, useTaxTypes, useJurisdictionTaxType,
   useRequirements, useChecklist, useClientDocuments, useDocumentVersions,
 } from "@/lib/hooks";
 import { groupRequirements, checklistProgress, suggestRequirement, isoFlag, CHECKLIST_STATUS_TONE } from "@/lib/checklist";
@@ -457,6 +457,7 @@ function VersionHistory({ documentId, currentVersionNo }: { documentId: string; 
 
 export function ClientDocumentsView() {
   const { data: myClient } = useMyClient();
+  const { data: currentUser } = useCurrentUser();
   const { data: jurisdictions = [], isLoading: jLoading, error: jError, mutate: mutateJurisdictions } = useJurisdictions();
   const [countryId, setCountryId] = useState<string | null>(null);
   const [taxTypeId, setTaxTypeId] = useState<string | null>(null);
@@ -586,7 +587,20 @@ export function ClientDocumentsView() {
     setFormError("");
     if (file.size > MAX_MB * 1024 * 1024) { setFormError(`"${file.name}" exceeds ${MAX_MB}MB.`); return; }
     const sb = createClient();
-    if (!sb || !myClient) { setFormError("Connect Supabase to enable uploads (demo mode is read-only)."); return; }
+    if (!sb) { setFormError("Connect Supabase to enable uploads (demo mode is read-only)."); return; }
+    if (!myClient) {
+      // Say exactly what's wrong instead of a generic role error: most often a
+      // client login whose company record was never linked to it.
+      const who = currentUser as { name?: string; role?: string } | null;
+      const role = who?.role ?? "";
+      const name = who?.name ?? "this login";
+      if (role === "admin" || role === "employee") {
+        setFormError(`You're logged in as ${name} (${role}) — uploads need a Client login. Log out and sign in with the client account.`);
+      } else {
+        setFormError(`No company record is linked to ${name}. Ask your admin to link it (Admin → Team → “Sync signups” repairs this automatically), then refresh this page.`);
+      }
+      return;
+    }
     setBusy(file.name);
     try {
       const f = await ensureFilingAndChecklist();
@@ -996,15 +1010,8 @@ export function ClientDocumentsView() {
         {formError && <p className="mt-2 text-xs font-medium" style={{ color: "#DC2626" }}>{formError}</p>}
       </Card>
 
-      {/* 5. Dropzone (gated, with suggestions) */}
+      {/* 5. Dropzone area (Drag & drop visual removed by request, staging UI kept for the top upload button) */}
       <div>
-        <label className={`flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed p-8 text-center ${ready ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
-          style={{ borderColor: "#2563EB66", background: "color-mix(in srgb, #2563EB 5%, transparent)" }}>
-          <Upload size={22} color="#2563EB" />
-          <span className="text-sm font-semibold">Drag & drop files here, or click to browse</span>
-          <input type="file" className="hidden" multiple accept={ACCEPT} disabled={!ready} onChange={(e) => { stageFiles(e.target.files); e.target.value = ""; }} />
-        </label>
-        {dropError && <p className="mt-2 text-xs font-medium" style={{ color: "#DC2626" }}>{dropError}</p>}
         {staged.length > 0 && (
           <Card className="mt-3">
             <p className="eyebrow mb-2">Ready to upload ({staged.length})</p>
