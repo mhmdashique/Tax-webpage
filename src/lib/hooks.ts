@@ -170,8 +170,8 @@ export function useCurrentUser() {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return null;
     const { data } = await sb.from("users").select("name,role").eq("id", user.id).maybeSingle();
-    if (data) return data as { name: string; role: string };
-    return { name: (user.user_metadata as { name?: string } | undefined)?.name ?? user.email ?? "User", role: (user.user_metadata as { role?: string } | undefined)?.role ?? "" };
+    if (data) return { ...data, id: user.id } as { id: string; name: string; role: string };
+    return { id: user.id, name: (user.user_metadata as { name?: string } | undefined)?.name ?? user.email ?? "User", role: (user.user_metadata as { role?: string } | undefined)?.role ?? "" };
   });
 }
 

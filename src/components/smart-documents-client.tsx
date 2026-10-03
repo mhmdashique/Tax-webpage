@@ -585,7 +585,8 @@ export function ClientDocumentsView() {
 
   async function uploadFile(file: File, requirementId: string | null) {
     setFormError("");
-    if (file.size > MAX_MB * 1024 * 1024) { setFormError(`"${file.name}" exceeds ${MAX_MB}MB.`); return; }
+    setSuccessMsg("");
+    if (file.size > MAX_MB * 1024 * 1024) { setFormError(`✗ "${file.name}" exceeds ${MAX_MB}MB.`); return; }
     const sb = createClient();
     if (!sb) { setFormError("Connect Supabase to enable uploads (demo mode is read-only)."); return; }
     if (!myClient) {
@@ -640,8 +641,9 @@ export function ClientDocumentsView() {
       await sb.from("activity_log").insert([{ firm_id: myClient.firm_id, action: `uploaded ${file.name}`, entity_type: "document", entity_id: ins.id }]).then(() => {}, () => {});
       await mutateChecklist();
       await mutateDocs();
+      setSuccessMsg(`✓ Successfully uploaded ${file.name}`);
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : "Upload failed.");
+      setFormError(`✗ ` + (e instanceof Error ? e.message : "Upload failed."));
     } finally {
       setBusy(null);
     }
@@ -660,8 +662,13 @@ export function ClientDocumentsView() {
   }
 
   async function uploadStaged() {
+    setFormError("");
+    setSuccessMsg("");
     for (const s of staged) await uploadFile(s.file, s.confirmedId);
     setStaged([]);
+    if (staged.length > 1) {
+      setSuccessMsg(`✓ Successfully uploaded ${staged.length} files.`);
+    }
   }
 
   async function removeDoc(id: string, status?: string) {
@@ -1008,6 +1015,7 @@ export function ClientDocumentsView() {
             </div>
           )}
         {formError && <p className="mt-2 text-xs font-medium" style={{ color: "#DC2626" }}>{formError}</p>}
+        {successMsg && <p className="mt-2 text-xs font-medium" style={{ color: "#16A34A" }}>{successMsg}</p>}
       </Card>
 
       {/* 5. Dropzone area (Drag & drop visual removed by request, staging UI kept for the top upload button) */}

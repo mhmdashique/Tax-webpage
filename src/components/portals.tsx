@@ -1,13 +1,26 @@
 "use client";
-import { useRef, useState } from "react";
-import { Card, Button, EmptyState, Badge, StatCard, Stepper, Sparkline } from "./ui";
-import { useFilings, useTasks, useDocuments, useClients, useCurrentUser } from "@/lib/hooks";
+import { useEffect, useRef, useState } from "react";
+import useSWR from "swr";
+import { Card, Button, EmptyState, Badge, Modal, StatCard, Stepper, Sparkline } from "./ui";
+import { useFilings, useTasks, useDocuments, useClients, useCurrentUser, useUsers } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
 import { dueLabel, greeting, formatMoney, downloadFile } from "@/lib/data";
 import Link from "next/link";
 import { Upload, FileSignature, User as UserIcon, Bell, Palette, Briefcase, CalendarDays, Inbox } from "lucide-react";
 import { SecurityCard } from "./reports-settings";
-import { CLIENT_STEPPER, clientStepperIndex, stageLabel, clientActionFor, isComplete, isOverdue, displayStatus, FILING_STAGES } from "@/lib/lifecycle";
+import { CLIENT_STEPPER, clientStepperIndex, stageLabel, clientActionFor, isComplete, isOverdue, displayStatus } from "@/lib/lifecycle";
+import { WaitingOnClientsCard, fmtDT } from "./task-center";
+import { SearchSelect } from "./search-select";
+import type { Task, TaskEvent } from "@/types/database";
+
+function useClientTimestamp() {
+  const [timestamp, setTimestamp] = useState<number | null>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setTimestamp(Date.now()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+  return timestamp;
+}
 
 export function AccountView({ role }: { role: "employee" | "client" | "admin" }) {
   const [tab, setTab] = useState("profile");
@@ -167,11 +180,13 @@ function WorkSummary() {
 
 export function EmployeeDashboard() {
   const { data: currentUser } = useCurrentUser();
+  const currentTimestamp = useClientTimestamp();
   const { data: filings = [], isLoading } = useFilings();
   const { data: clients = [] } = useClients();
-  const { data: tasks = [] } = useTasks();
-  const open = tasks.filter((t) => String(t.status) !== "done").length;
-  const dueWeek = filings.filter((f) => { const d = new Date(f.due_date).getTime() - Date.now(); return d >= 0 && d < 7 * 864e5; }).length;
+  const dueWeek = currentTimestamp === null ? 0 : filings.filter((f) => {
+    const diff = new Date(f.due_date).getTime() - currentTimestamp;
+    return diff >= 0 && diff < 7 * 864e5;
+  }).length;
   const doneMonth = filings.filter((f) => isComplete(String(f.status))).length;
   const sorted = [...filings].sort((a, b) => +new Date(a.due_date) - +new Date(b.due_date)).slice(0, 6);
   const userName = currentUser?.name ?? "User";
@@ -182,16 +197,14 @@ export function EmployeeDashboard() {
         <h1 className="text-2xl font-bold">{greeting()}, {userName}</h1>
         <p className="mt-1 text-sm opacity-90">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · {dueWeek} filings due this week</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard label="My clients" value={String(clients.length)} icon={<UserIcon size={18} />} spark={<Sparkline points={[2, 3, 4, 5, clients.length || 1]} color="#0EA5A4" />} />
-        <StatCard label="Open tasks" value={String(open)} icon={<Briefcase size={18} />} spark={<Sparkline points={[5, 4, 6, 3, open || 1]} />} />
         <StatCard label="Due this week" value={String(dueWeek)} icon={<CalendarDays size={18} />} spark={<Sparkline points={[1, 2, 1, 3, dueWeek]} color="#D97706" />} />
         <StatCard label="Completed month" value={String(doneMonth)} icon={<Briefcase size={18} />} spark={<Sparkline points={[1, 2, 3, 4, doneMonth]} color="#16A34A" />} />
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
-          <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">My Clients</h2><Link href="/employee/clients" className="text-sm font-semibold text-[#2563EB] hover:underline">View all</Link></div>
-          {clients.length === 0 ? <EmptyState icon={<UserIcon size={22} />} title="No clients assigned to you yet" /> : (
+          <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">My Clients</h2><Link href="/employee/clients" className="text-sm font-semibold text-[#2563EB] hover:underline">View all</Link></div>          {clients.length === 0 ? <EmptyState icon={<UserIcon size={22} />} title="No clients assigned to you yet" /> : (
             <div className="grid gap-3 sm:grid-cols-2">
               {clients.slice(0, 4).map((c) => (
                 <div key={c.id} className="rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg" style={{ borderColor: "var(--border)" }}>
@@ -212,6 +225,7 @@ export function EmployeeDashboard() {
           )}
         </Card>
       </div>
+      <WaitingOnClientsCard />
     </div>
   );
 }
@@ -220,7 +234,21 @@ export function ClientDashboard() {
   const { data: currentUser } = useCurrentUser();
   const { data: filings = [], isLoading } = useFilings();
   const { data: docs = [] } = useDocuments();
-  const { data: tasks = [] } = useTasks();
+  const { data: tasks = [], error: tasksError, isLoading: tasksLoading, mutate: mutateTasks } = useTasks();
+  const [clientTaskTab, setClientTaskTab] = useState<"todo" | "overdue" | "completed">("todo");
+  const [clientTaskMessage, setClientTaskMessage] = useState("");
+  const [clientTaskSaving, setClientTaskSaving] = useState("");
+  const clientTasks = tasks.filter((task) => task.task_for === "client" && (!currentUser?.id || task.assigned_to === currentUser.id));
+  const openClientTasks = clientTasks.filter((task) => !["done", "cancelled"].includes(String(task.status)));
+  const dueSoonClientTasks = openClientTasks.filter((task) =>
+    task.due_date && /^(Due today|Due tomorrow|Due in [1-3]d)$/.test(dueLabel(task.due_date))
+  ).length;
+  const visibleClientTasks = clientTasks.filter((task) => {
+    if (clientTaskTab === "completed") return String(task.status) === "done";
+    if (clientTaskTab === "overdue") return !["done", "cancelled"].includes(String(task.status))
+      && !!task.due_date && dueLabel(task.due_date).includes("overdue");
+    return !["done", "cancelled"].includes(String(task.status));
+  });
   const filing = filings[0] as unknown as { status?: string; tax_type?: string; period?: string; amount_owed?: number; due_date?: string } | undefined;
   const stageIdx = !filing ? -1 : clientStepperIndex(String(filing.status));
   const action = filing ? clientActionFor(String(filing.status)) : null;
@@ -260,10 +288,33 @@ export function ClientDashboard() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Upcoming deadlines" value={String(filings.filter((f) => !isComplete(String(f.status))).length)} icon={<CalendarDays size={18} />} />
-        <StatCard label="Action items" value={String(filingActions.length + tasks.filter((t) => String(t.status) !== "done").length)} icon={<Bell size={18} />} />
+        <StatCard label="Action items" value={String(filingActions.length + openClientTasks.length)} icon={<Bell size={18} />} />
         <StatCard label="Tax summary" value={!filing ? "—" : formatMoney(Number((filing as { amount_owed?: number }).amount_owed ?? 0))} icon={<Palette size={18} />} />
         <StatCard label="Documents" value={String((docs as unknown[]).length)} icon={<Upload size={18} />} spark={<Sparkline points={[1, 2, 3, (docs as unknown[]).length || 1]} color="#6366F1" />} />
       </div>
+
+      <ClientTasksDashboard
+        tasks={visibleClientTasks}
+        allTasks={clientTasks}
+        activeTab={clientTaskTab}
+        onTabChange={setClientTaskTab}
+        isLoading={tasksLoading}
+        error={tasksError?.message ?? ""}
+        message={clientTaskMessage}
+        savingTaskId={clientTaskSaving}
+        onStatusChange={async (taskId, status) => {
+          const sb = createClient();
+          if (!sb) { setClientTaskMessage("Connect Supabase before updating a task."); return; }
+          setClientTaskSaving(taskId);
+          setClientTaskMessage("");
+          const { error } = await sb.rpc("change_task_status", { p_task: taskId, p_status: status, p_reason: null });
+          setClientTaskSaving("");
+          if (error) { setClientTaskMessage(error.message); return; }
+          setClientTaskMessage("Task updated.");
+          await mutateTasks();
+        }}
+        dueSoonCount={dueSoonClientTasks}
+      />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
@@ -280,19 +331,13 @@ export function ClientDashboard() {
         </Card>
         <Card>
           <h2 className="mb-3 font-semibold">Outstanding Action Items</h2>
-          {filingActions.length === 0 && tasks.filter((t) => String(t.status) !== "done").length === 0 ? <EmptyState icon={<Inbox size={22} />} title="All caught up — nothing needs your action" /> : (
+          {filingActions.length === 0 ? <EmptyState icon={<Inbox size={22} />} title="All caught up — nothing needs your action" /> : (
             <div className="space-y-2">
               {filingActions.slice(0, 5).map(({ filing: f, action: a }) => (
                 <div key={f.id} className="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm" style={{ borderColor: "var(--border)" }}>
                   <span className="font-medium">{f.tax_type} {f.period}: {a}</span>
                   <Link href={a!.includes("upload") ? "/client/documents" : a!.includes("sign") ? "/client/account" : "/client/payments"} className="ml-auto text-xs font-bold text-[#2563EB] hover:underline">Do it now</Link>
                 </div>
-              ))}
-              {tasks.filter((t) => String(t.status) !== "done").slice(0, 5).map((t) => (
-                <label key={t.id} className="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm" style={{ borderColor: "var(--border)" }}>
-                  <input type="checkbox" /> <span className="font-medium">{t.title}</span>
-                  <Link href="/client/documents" className="ml-auto text-xs font-bold text-[#2563EB] hover:underline">Do it now</Link>
-                </label>
               ))}
             </div>
           )}
@@ -301,6 +346,394 @@ export function ClientDashboard() {
           </div>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function ClientTasksDashboard({
+  tasks,
+  allTasks,
+  activeTab,
+  onTabChange,
+  isLoading,
+  error,
+  message,
+  savingTaskId,
+  onStatusChange,
+  dueSoonCount,
+}: {
+  tasks: Task[];
+  allTasks: Task[];
+  activeTab: "todo" | "overdue" | "completed";
+  onTabChange: (tab: "todo" | "overdue" | "completed") => void;
+  isLoading: boolean;
+  error: string;
+  message: string;
+  savingTaskId: string;
+  onStatusChange: (taskId: string, status: string) => void;
+  dueSoonCount: number;
+}) {
+  const counts = {
+    todo: allTasks.filter((task) => !["done", "cancelled"].includes(String(task.status))).length,
+    overdue: allTasks.filter((task) => !["done", "cancelled"].includes(String(task.status)) && !!task.due_date && dueLabel(task.due_date).includes("overdue")).length,
+    completed: allTasks.filter((task) => String(task.status) === "done").length,
+  };
+  return <Card className="space-y-4">
+    <div>
+      <h2 className="font-semibold">My tasks</h2>
+      <p className="mt-1 rounded-xl px-3 py-2 text-sm font-semibold"
+        style={counts.overdue > 0
+          ? { background: "var(--danger-bg)", color: "var(--danger-tx)" }
+          : { background: "var(--accent-tint)", color: "var(--accent)" }}>
+        You have {counts.todo} {counts.todo === 1 ? "task" : "tasks"}, {dueSoonCount} due soon{counts.overdue > 0 ? ` · ${counts.overdue} overdue` : ""}.
+      </p>
+    </div>
+    <div className="flex flex-wrap gap-2" role="tablist" aria-label="Client task views">
+      {([
+        ["todo", "To do"],
+        ["overdue", "Overdue"],
+        ["completed", "Completed"],
+      ] as const).map(([key, label]) => <button key={key} role="tab" aria-selected={activeTab === key} onClick={() => onTabChange(key)}
+        className={`rounded-full px-3 py-1.5 text-xs font-semibold ${activeTab === key ? "text-white" : ""}`}
+        style={activeTab === key ? { background: "#2563EB" } : { background: "var(--bg)", border: "1px solid var(--border)" }}>
+        {label} <Badge>{counts[key]}</Badge>
+      </button>)}
+    </div>
+    {error && <p role="alert" className="text-sm text-[#DC2626]">Could not load your tasks: {error}</p>}
+    {message && <p role="status" className="text-sm" style={{ color: message.includes("updated") ? "var(--text-2)" : "#DC2626" }}>{message}</p>}
+    {isLoading ? <div className="skeleton h-24" /> : !tasks.length
+      ? <p className="rounded-xl p-4 text-sm" style={{ background: "var(--bg)", color: "var(--text-2)" }}>No tasks in this view.</p>
+      : <div className="space-y-2">{tasks.map((task) => (
+        <div key={task.id} className="flex flex-wrap items-center gap-3 rounded-xl border p-3" style={{ borderColor: "var(--border)" }}>
+          <div className="min-w-[180px] flex-1">
+            <p className="text-sm font-semibold">{task.title}</p>
+            <p className="mt-0.5 text-xs" style={{ color: "var(--text-2)" }}>{task.due_date ? dueLabel(task.due_date) : "No due date"}</p>
+          </div>
+          <Badge tone={task.priority === "urgent" ? "danger" : "neutral"}>{task.priority}</Badge>
+          {String(task.status) !== "done" && <div className="w-[160px] shrink-0"><SearchSelect
+            label={`Status for ${task.title}`} hideLabel value={String(task.status)} autoSelectSingle={false} clearable={false}
+            onChange={(id) => { if (id) onStatusChange(task.id, id); }}
+            options={["open", "in_progress", "done"].map((s) => ({ id: s, label: s.replace(/_/g, " ") }))}
+            placeholder="Status…" disabled={savingTaskId === task.id} /></div>}
+          <Link href={task.related_filing_id ? "/client/tax-filings" : "/client/documents"} className="text-xs font-semibold text-[#2563EB] hover:underline">
+            Open related item
+          </Link>
+        </div>
+      ))}</div>}
+    <Link href="/client/tasks" className="text-xs font-bold text-[#2563EB] hover:underline">View all tasks →</Link>
+  </Card>;
+}
+
+/** Days until due (negative = overdue). */
+
+/** Days until due (negative = overdue). */
+function daysUntil(due: string | null | undefined): number | null {
+  if (!due) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(`${due}T00:00:00`);
+  if (Number.isNaN(+d)) return null;
+  return Math.round((d.getTime() - today.getTime()) / 864e5);
+}
+
+function dueChip(due: string | null | undefined): { label: string; tone: "success" | "warning" | "danger" | "accent" | "neutral" } {
+  const n = daysUntil(due);
+  if (n === null) return { label: "No due date", tone: "neutral" };
+  if (n < 0) return { label: `Overdue by ${-n}d`, tone: "danger" };
+  if (n === 0) return { label: "Due today", tone: "warning" };
+  if (n <= 3) return { label: `Due in ${n}d`, tone: "warning" };
+  return { label: `Due in ${n}d`, tone: "neutral" };
+}
+
+/** Primary action for a client task: link to the linked screen, or done. */
+function primaryAction(task: Task, taskKey: string):
+  | { kind: "link"; label: string; href: string }
+  | { kind: "approve"; label: string }
+  | { kind: "done"; label: string } {
+  const k = taskKey.toLowerCase();
+  const filingHref = "/client/documents";
+  if (k.includes("reupload") || k.includes("re-upload") || k.includes("correct")) {
+    return { kind: "link", label: "Re-upload corrected file", href: filingHref };
+  }
+  if (k.includes("upload") || k.includes("document")) {
+    return { kind: "link", label: "Upload documents", href: filingHref };
+  }
+  if (k.includes("payment") || k.includes("challan")) {
+    return { kind: "link", label: "Record payment", href: "/client/payments" };
+  }
+  if (k.includes("approve") || k.includes("summary")) {
+    return { kind: "approve", label: "Approve summary" };
+  }
+  if (k.includes("download") || k.includes("return") || k.includes("computation")) {
+    return { kind: "link", label: "Download files", href: filingHref };
+  }
+  if (k.includes("invoice")) {
+    return { kind: "done", label: "Create invoice" };
+  }
+  return { kind: "done", label: "Mark as done" };
+}
+
+/** Full client task workspace: tabs, search, filters, cards, details panel. */
+export function ClientTaskCenter() {
+  const { data: currentUser } = useCurrentUser();
+  const { data: tasks = [], isLoading, error, mutate } = useTasks();
+  const { data: filings = [] } = useFilings();
+  const { data: users = [] } = useUsers();
+  const { data: taskTypes = [] } = useSWR<{ id: string; task_key: string }[]>("task-types", async () => {
+    const sb = createClient();
+    if (!sb) return [];
+    const { data } = await sb.from("task_types").select("id,task_key").order("name");
+    return (data ?? []) as { id: string; task_key: string }[];
+  });
+  const [tab, setTab] = useState<"todo" | "overdue" | "completed">("todo");
+  const [query, setQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [filingFilter, setFilingFilter] = useState("all");
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [question, setQuestion] = useState("");
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState("");
+  const [message, setMessage] = useState("");
+  const seenFired = useRef<Record<string, boolean>>({});
+
+  const clientTasks = tasks.filter((t) => t.task_for === "client" && t.assigned_to === currentUser?.id);
+  const openTasks = clientTasks.filter((t) => !["done", "cancelled"].includes(String(t.status)));
+  const overdueTasks = openTasks.filter((t) => (daysUntil(t.due_date) ?? 0) < 0);
+  const dueSoon = openTasks.filter((t) => { const n = daysUntil(t.due_date); return n !== null && n >= 0 && n <= 3; }).length;
+
+  const visible = clientTasks.filter((t) => {
+    if (tab === "completed") {
+      if (!(String(t.status) === "done" || String(t.client_status) === "reviewed")) return false;
+    } else if (tab === "overdue") {
+      if (!((daysUntil(t.due_date) ?? 0) < 0) || ["done", "cancelled"].includes(String(t.status))) return false;
+    } else if (["done", "cancelled"].includes(String(t.status))) return false;
+    if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
+    if (filingFilter !== "all" && t.related_filing_id !== filingFilter) return false;
+    if (query && !t.title.toLowerCase().includes(query.toLowerCase())) return false;
+    return true;
+  }).sort((a, b) => (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999"));
+
+  const detail = clientTasks.find((t) => t.id === detailId) ?? null;
+
+  const { data: events = [] } = useSWR<TaskEvent[]>(detail ? ["client-task-events", detail.id] : null, async () => {
+    const sb = createClient();
+    if (!sb || !detail) return [];
+    const { data, error } = await sb.from("task_events").select("*").eq("task_id", detail.id).order("created_at", { ascending: true }).limit(200);
+    if (error) throw error;
+    return (data ?? []) as TaskEvent[];
+  });
+  const nameOf = (id?: string | null) => users.find((u) => u.id === id)?.name ?? "Your accountant";
+
+  // First open marks the task seen (staff see "Seen on …").
+  useEffect(() => {
+    if (!detail || detail.seen_at || seenFired.current[detail.id]) return;
+    const sb = createClient();
+    if (!sb) return;
+    seenFired.current[detail.id] = true;
+    void sb.rpc("mark_task_seen", { p_task: detail.id }).then(() => mutate(), () => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailId]);
+
+  async function changeStatus(id: string, status: string, okMsg: string) {
+    const sb = createClient();
+    if (!sb) { setMessage("Connect Supabase before updating a task."); return; }
+    setBusy(id);
+    setMessage("");
+    const { error } = await sb.rpc("change_task_status", { p_task: id, p_status: status, p_reason: null });
+    setBusy("");
+    if (error) { setMessage(error.message); return; }
+    setMessage(okMsg);
+    await mutate();
+  }
+
+  async function sendComment(id: string, body: string, kind: "comment" | "question") {
+    const text = body.trim();
+    if (!text) return;
+    const sb = createClient();
+    if (!sb) { setMessage("Connect Supabase before commenting."); return; }
+    setBusy(`${id}-${kind}`);
+    setMessage("");
+    const { error } = await sb.rpc("add_task_comment", { p_task: id, p_comment: text, p_kind: kind });
+    setBusy("");
+    if (error) { setMessage(error.message); return; }
+    if (kind === "question") setQuestion("");
+    else setComment("");
+    setMessage(kind === "question" ? "Question sent to your accountant." : "Comment posted.");
+    await mutate();
+  }
+
+  const comments = events.filter((e) => e.event === "commented");
+
+  // Attachments from the accountant: the linked document, if any.
+  const { data: linkedDoc = null } = useSWR<{ file_name: string } | null>(
+    detail?.document_id ? ["client-task-doc", detail.document_id] : null,
+    async () => {
+      const sb = createClient();
+      if (!sb || !detail?.document_id) return null;
+      const { data } = await sb.from("documents").select("file_name").eq("id", detail.document_id).maybeSingle();
+      return (data as { file_name: string } | null) ?? null;
+    }
+  );
+  const detailFiling = filings.find((f) => f.id === detail?.related_filing_id);
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold">My tasks</h1>
+        <p className="mt-1 rounded-xl px-3 py-2 text-sm font-semibold"
+          style={overdueTasks.length > 0
+            ? { background: "var(--danger-bg)", color: "var(--danger-tx)" }
+            : { background: "var(--accent-tint)", color: "var(--accent)" }}>
+          You have {openTasks.length} {openTasks.length === 1 ? "task" : "tasks"}, {dueSoon} due soon{overdueTasks.length > 0 ? ` · ${overdueTasks.length} overdue` : ""}.
+        </p>
+      </div>
+      {message && <p role="status" className="rounded-xl px-4 py-2 text-xs font-semibold" style={{ background: "var(--bg)" }}>{message}</p>}
+      <div className="flex flex-wrap items-center gap-2">
+        {(["todo", "overdue", "completed"] as const).map((t) => (
+          <button key={t} onClick={() => setTab(t)}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold capitalize ${tab === t ? "text-white" : ""}`}
+            style={tab === t ? { background: "#2563EB" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>
+            {t === "todo" ? "To do" : t}
+          </button>
+        ))}
+        <div className="w-[150px] shrink-0"><SearchSelect label="Priority filter" hideLabel clearable={false} value={priorityFilter} onChange={setPriorityFilter} autoSelectSingle={false}
+          options={[{ id: "all", label: "All priorities" }, ...["low", "normal", "medium", "high", "urgent"].map((p) => ({ id: p, label: p }))]} placeholder="All priorities" /></div>
+        <div className="w-[170px] shrink-0"><SearchSelect label="Filing filter" hideLabel clearable={false} value={filingFilter} onChange={setFilingFilter} autoSelectSingle={false}
+          options={[{ id: "all", label: "All filings" }, ...filings.map((f) => ({ id: f.id, label: `${f.tax_type} · ${f.period}` }))]} placeholder="All filings" /></div>
+        <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search tasks…"
+          className="h-9 w-[180px] shrink-0 rounded-full border px-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]" style={{ background: "var(--surface)", borderColor: "var(--border)" }} />
+      </div>
+      {error && <p role="alert" className="text-sm text-[#DC2626]">Could not load your tasks: {error.message}</p>}
+      {isLoading ? <div className="skeleton h-40" /> : clientTasks.length === 0 ? (
+        <Card><EmptyState icon={<Inbox size={22} />} title="No tasks right now. Your accountant will add tasks here when something is needed." /></Card>
+      ) : visible.length === 0 ? (
+        <Card><p className="py-6 text-center text-sm" style={{ color: "var(--text-2)" }}>No tasks in this view.</p></Card>
+      ) : (
+        <div className="space-y-3">
+          {visible.map((t) => {
+            const chip = dueChip(t.due_date);
+            const filing = filings.find((f) => f.id === t.related_filing_id);
+            const taskKey = taskTypes.find((tt) => tt.id === t.task_type_id)?.task_key ?? "";
+            const action = primaryAction(t, taskKey);
+            const done = ["done", "cancelled"].includes(String(t.status));
+            return (
+              <Card key={t.id} className="space-y-3" hover>
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <button onClick={() => setDetailId(t.id)} className="text-left text-base font-bold text-[#2563EB] hover:underline">{t.title}</button>
+                    <p className="mt-0.5 text-xs" style={{ color: "var(--text-2)" }}>
+                      {filing ? `${filing.tax_type}, ${filing.period} · ` : ""}Assigned by {nameOf(t.created_by)}{t.created_at ? ` · ${new Date(t.created_at).toLocaleDateString()}` : ""}
+                    </p>
+                  </div>
+                  <Badge tone={chip.tone}>{chip.label}</Badge>
+                  <Badge tone={t.priority === "urgent" ? "danger" : t.priority === "high" ? "warning" : "neutral"}>{t.priority}</Badge>
+                  <Badge tone={String(t.status) === "done" ? "success" : "accent"}>{String(t.status).replace(/_/g, " ")}</Badge>
+                </div>
+                {t.notes && <p className="text-sm" style={{ color: "var(--text-2)" }}>{t.notes}</p>}
+                {!done && (
+                  <div className="flex flex-wrap gap-2">
+                    {String(t.status) === "open" && (
+                      <Button className="px-4 py-2 text-xs" disabled={busy === t.id}
+                        onClick={() => void changeStatus(t.id, "in_progress", "Task started.")}>Start task</Button>
+                    )}
+                    {action.kind === "link" ? (
+                      <Link href={action.href} className="btn-primary inline-flex items-center px-4 py-2 text-xs">{action.label}</Link>
+                    ) : action.kind === "approve" ? (
+                      <Button className="px-4 py-2 text-xs" disabled={busy === t.id}
+                        onClick={() => void changeStatus(t.id, "done", "Summary approved.")}>{action.label}</Button>
+                    ) : (
+                      <Button className="px-4 py-2 text-xs" disabled={busy === t.id}
+                        onClick={() => void changeStatus(t.id, "done", "Task marked done.")}>{action.label}</Button>
+                    )}
+                    <Button variant="ghost" className="px-4 py-2 text-xs" onClick={() => { setDetailId(t.id); setQuestion(""); }}>
+                      Ask a question
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
+      {detail && (
+        <Modal open onClose={() => setDetailId(null)} title={detail.title} size="xl">
+          <div className="space-y-5 text-sm">
+            <div className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
+              <p><span style={{ color: "var(--text-2)" }}>Status: </span><span className="font-semibold">{String(detail.status).replace(/_/g, " ")}</span></p>
+              <p><span style={{ color: "var(--text-2)" }}>Due: </span><span className="font-semibold">{dueChip(detail.due_date).label}{detail.due_date ? ` (${detail.due_date})` : ""}</span></p>
+              <p><span style={{ color: "var(--text-2)" }}>Priority: </span><span className="font-semibold">{detail.priority}</span></p>
+              <p><span style={{ color: "var(--text-2)" }}>Assigned by: </span><span className="font-semibold">{nameOf(detail.created_by)}{detail.created_at ? ` · ${new Date(detail.created_at).toLocaleDateString()}` : ""}</span></p>
+            </div>
+            {detail.notes && <p className="rounded-xl p-3" style={{ background: "var(--bg)" }}>{detail.notes}</p>}
+            {(detailFiling || linkedDoc) && (
+              <div className="flex flex-wrap gap-2">
+                {detailFiling && (
+                  <Link href="/client/tax-filings" className="rounded-[10px] border px-3 py-2 text-xs font-bold" style={{ borderColor: "var(--border)" }}>
+                    {detailFiling.tax_type} · {detailFiling.period}
+                  </Link>
+                )}
+                {linkedDoc && (
+                  <Link href="/client/documents" className="rounded-[10px] border px-3 py-2 text-xs font-bold" style={{ borderColor: "var(--border)" }}>
+                    Attachment: {linkedDoc.file_name}
+                  </Link>
+                )}
+              </div>
+            )}
+            {detail.reopened_reason && (
+              <p className="rounded-xl px-3 py-2 text-xs font-medium" style={{ background: "var(--warn-bg)", color: "var(--warn-tx)" }}>
+                Reopened by your accountant: {detail.reopened_reason}
+              </p>
+            )}
+            <div>
+              <p className="eyebrow mb-2">History</p>
+              <div className="space-y-1.5">
+                {events.length === 0 && <p className="text-xs" style={{ color: "var(--text-2)" }}>No history yet.</p>}
+                {events.filter((e) => e.event !== "commented").map((e) => (
+                  <div key={e.id} className="flex items-center gap-2 text-xs">
+                    <Badge tone="neutral">{e.event.replace(/_/g, " ")}</Badge>
+                    <span style={{ color: "var(--text-2)" }}>{fmtDT(e.created_at)}</span>
+                    {e.event === "reopened" && e.details?.reason != null && <span>— {String(e.details.reason)}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="eyebrow mb-2">Messages with your accountant ({comments.length})</p>
+              <div className="space-y-2">
+                {comments.length === 0 && <p className="text-xs" style={{ color: "var(--text-2)" }}>No messages yet.</p>}
+                {comments.map((c) => (
+                  <div key={c.id} className="rounded-xl p-3" style={{ background: "var(--bg)" }}>
+                    <p className="mb-1 text-xs font-semibold">{c.actor_id === currentUser?.id ? "You" : nameOf(c.actor_id)} · {fmtDT(c.created_at)}</p>
+                    <p>{String(c.details?.body ?? "")}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 flex gap-2">
+                <input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Write a message…"
+                  className="flex-1 rounded-[10px] border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
+                <Button className="px-4 py-2 text-xs" disabled={busy !== "" || !comment.trim()}
+                  onClick={() => void sendComment(detail.id, comment, "comment")}>Send</Button>
+              </div>
+              <div className="mt-2 flex gap-2">
+                <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Ask a question…"
+                  className="flex-1 rounded-[10px] border px-3 py-2 text-sm outline-none" style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
+                <Button variant="ghost" className="px-4 py-2 text-xs" disabled={busy !== "" || !question.trim()}
+                  onClick={() => void sendComment(detail.id, question, "question")}>Ask</Button>
+              </div>
+            </div>
+            {!["done", "cancelled"].includes(String(detail.status)) && (
+              <div className="flex flex-wrap gap-2">
+                {String(detail.status) === "open" && (
+                  <Button className="px-4 py-2 text-xs" disabled={busy === detail.id}
+                    onClick={() => void changeStatus(detail.id, "in_progress", "Task started.")}>Start task</Button>
+                )}
+                <Button className="px-4 py-2 text-xs" disabled={busy === detail.id}
+                  onClick={() => void changeStatus(detail.id, "done", "Task marked done.")}>Mark as done</Button>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

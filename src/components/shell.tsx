@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { usePendingCount } from "./approvals";
 import { ThemeToggle } from "./ui";
@@ -10,7 +11,7 @@ import {
   CreditCard, BarChart3, Settings, LifeBuoy, AlertTriangle, Gauge, User as UserIcon, History, LogOut, Menu, PenLine, Phone,
 } from "lucide-react";
 
-export type NavItem = { href: string; label: string; icon: React.ReactNode; badge?: number };
+export type NavItem = { href: string; label: string; icon: React.ReactNode; badge?: number; badgeTone?: "blue" | "red" };
 
 const ICONS: Record<string, React.ReactNode> = {
   dashboard: <LayoutDashboard size={20} />,
@@ -80,6 +81,7 @@ export function navFor(role: "admin" | "employee" | "client"): { menu: NavItem[]
   return {
     menu: [
       { href: `${base}/dashboard`, label: "Dashboard", icon: ic("dashboard") },
+      { href: `${base}/tasks`, label: "Tasks", icon: ic("tasks") },
       { href: `${base}/tax-filings`, label: "Tax Filings", icon: ic("filings") },
       { href: `${base}/documents`, label: "Documents", icon: ic("documents") },
       { href: `${base}/messages`, label: "Messages", icon: ic("messages") },
@@ -105,10 +107,22 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
   const [mobileOpen, setMobileOpen] = useState(false);
   // Live pending-approval count for admins (Realtime-backed, 30s poll fallback).
   const pendingCount = usePendingCount(role === "admin");
-  const menuWithBadges: NavItem[] =
-    role === "admin" && pendingCount > 0
-      ? menu.map((m) => (m.href === "/admin/team" ? { ...m, badge: pendingCount } : m))
-      : menu;
+  const { data: clientOpenTaskCountData, error: clientTaskCountError } = useSWR(role === "client" ? "client-open-task-nav-count" : null, async () => {
+    const sb = createClient();
+    if (!sb) return 0;
+    const { data, error } = await sb.from("tasks").select("id")
+      .eq("task_for", "client").not("status", "in", "(done,cancelled)");
+    if (error) throw error;
+    return data.length;
+  }, { refreshInterval: 30000 });
+  void clientTaskCountError;
+  const clientOpenTaskCount = clientOpenTaskCountData ?? 0;
+  const menuWithBadges: NavItem[] = menu
+    .map((item) => {
+      if (role === "admin" && item.href === "/admin/team" && pendingCount > 0) return { ...item, badge: pendingCount };
+      if (role === "client" && item.href === "/client/tasks" && clientOpenTaskCount > 0) return { ...item, badge: clientOpenTaskCount, badgeTone: "red" };
+      return item;
+    });
 
   async function handleLogout() {
     const sb = createClient();
@@ -125,7 +139,7 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
           <span className="shrink-0">{item.icon}</span>
           {!collapsed && <span className="flex-1">{item.label}</span>}
           {!collapsed && item.badge ? (
-            <span className="inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: "#2563EB" }}>
+            <span className="inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: item.badgeTone === "red" ? "#DC2626" : "#2563EB" }}>
               {item.badge}
             </span>
           ) : null}
@@ -229,6 +243,7 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1440px] flex-1 space-y-6 p-4 md:p-8" style={{ padding: 32 }}>
+          {clientTaskCountError && <p role="alert" className="rounded-lg px-3 py-2 text-sm text-[#DC2626]">Could not load your task badge: {clientTaskCountError.message}</p>}
           {title ? (
             <div className="mb-2 flex items-center gap-2 text-xs" style={{ color: "var(--text-2)" }}>
               <span>TaxDesk</span><span>/</span><span>{ROLE_CHIP[role]}</span><span>/</span><span style={{ color: "var(--text)" }}>{title}</span>

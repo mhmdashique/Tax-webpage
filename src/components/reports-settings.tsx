@@ -7,6 +7,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import { Download, Trash2, Plus, Bell, Building2, ShieldCheck, Plug, CreditCard, ScrollText } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isComplete, isOverdue, displayStatus, stageLabel } from "@/lib/lifecycle";
+import { GstRulesSettings } from "./gst-payments";
 
 export function ReportsView() {
   const { data: filings = [] } = useFilings();
@@ -108,6 +109,7 @@ export function SettingsView() {
 
   const tabs = [
     { k: "rules", label: "Tax Rules", icon: <ScrollText size={15} /> },
+    { k: "gst-rules", label: "GST Interest & Late Fees", icon: <CreditCard size={15} /> },
     { k: "notifications", label: "Notifications", icon: <Bell size={15} /> },
     { k: "firm", label: "Firm Profile", icon: <Building2 size={15} /> },
     { k: "security", label: "Security", icon: <ShieldCheck size={15} /> },
@@ -160,6 +162,8 @@ export function SettingsView() {
           </form>
         </Card>
       )}
+
+      {tab === "gst-rules" && <GstRulesSettings />}
 
       {tab === "notifications" && (
         <Card>

@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useTheme } from "./theme-provider";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, X } from "lucide-react";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const { theme, toggle } = useTheme();
@@ -92,17 +92,52 @@ export function EmptyState({ icon, title, action }: { icon: React.ReactNode; tit
 }
 
 export function Modal({ open, onClose, title, children, size = "md" }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; size?: "md" | "xl" }) {
+  const titleId = React.useId();
+  React.useEffect(() => {
+    if (!open) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open, onClose]);
+
   if (!open) return null;
   const wide = size === "xl";
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="card relative w-full overflow-y-auto" style={{ background: "var(--surface-elev)", borderRadius: 20, maxWidth: wide ? 768 : 512, padding: wide ? 32 : 24, maxHeight: "calc(100vh - 3rem)" }}>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className={wide ? "min-w-0 flex-1 break-all text-lg font-semibold" : "text-base font-semibold"}>{title}</h3>
-          <button onClick={onClose} className="btn-ghost shrink-0 px-2 py-1" aria-label="Close">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+      <button type="button" className="absolute inset-0 bg-slate-950/60 backdrop-blur-[3px]" onClick={onClose} aria-label="Close dialog" />
+      <div
+        className="relative flex w-full flex-col overflow-hidden rounded-2xl border shadow-2xl sm:rounded-3xl"
+        style={{
+          background: "var(--surface-elev)",
+          borderColor: "var(--border)",
+          maxWidth: wide ? 960 : 560,
+          maxHeight: "min( calc(100dvh - 2rem), 900px )",
+          boxShadow: "0 24px 80px rgba(15, 23, 42, 0.28)",
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b px-5 py-4 sm:px-7 sm:py-5" style={{ borderColor: "var(--border)" }}>
+          <div className="min-w-0">
+            <h3 id={titleId} className="truncate text-base font-bold tracking-tight sm:text-lg">{title}</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors hover:text-[#2563EB]"
+            style={{ borderColor: "var(--border)", color: "var(--text-2)" }}
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
         </div>
-        {children}
+        <div className={`min-h-0 flex-1 overflow-y-auto ${wide ? "p-5 sm:p-7" : "p-5 sm:p-6"}`}>
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -157,7 +192,7 @@ export function Stepper({ steps, current }: { steps: string[]; current: number }
   );
 }
 
-export function DataTable({ columns, rows, emptyText = "No records yet" }: { columns: string[]; rows: React.ReactNode[][]; emptyText?: string }) {
+export function DataTable({ columns, rows, onRowClick, emptyText = "No records yet" }: { columns: string[]; rows: React.ReactNode[][]; onRowClick?: (rowIndex: number) => void; emptyText?: string }) {
   if (!rows.length) return <p className="py-8 text-center text-sm" style={{ color: "var(--text-2)" }}>{emptyText}</p>;
   return (
     <div className="overflow-x-auto">
@@ -171,7 +206,7 @@ export function DataTable({ columns, rows, emptyText = "No records yet" }: { col
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className="row-hover border-t transition-colors" style={{ height: 56 }}>
+            <tr key={i} onClick={() => onRowClick?.(i)} className={`border-t transition-colors ${onRowClick ? "cursor-pointer hover:bg-black/5 dark:hover:bg-white/5" : "row-hover"}`} style={{ height: 56 }}>
               {r.map((cell, j) => (
                 <td key={j} className="tnum px-3 py-2">{cell}</td>
               ))}
