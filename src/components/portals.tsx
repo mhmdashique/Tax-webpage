@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { Card, Button, EmptyState, Badge, StatCard, Stepper, Sparkline } from "./ui";
-import { useFilings, useTasks, useDocuments, useClients } from "@/lib/hooks";
+import { useFilings, useTasks, useDocuments, useClients, useCurrentUser } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
 import { dueLabel, greeting, formatMoney, downloadFile } from "@/lib/data";
 import Link from "next/link";
@@ -166,6 +166,7 @@ function WorkSummary() {
 }
 
 export function EmployeeDashboard() {
+  const { data: currentUser } = useCurrentUser();
   const { data: filings = [], isLoading } = useFilings();
   const { data: clients = [] } = useClients();
   const { data: tasks = [] } = useTasks();
@@ -173,11 +174,12 @@ export function EmployeeDashboard() {
   const dueWeek = filings.filter((f) => { const d = new Date(f.due_date).getTime() - Date.now(); return d >= 0 && d < 7 * 864e5; }).length;
   const doneMonth = filings.filter((f) => isComplete(String(f.status))).length;
   const sorted = [...filings].sort((a, b) => +new Date(a.due_date) - +new Date(b.due_date)).slice(0, 6);
+  const userName = currentUser?.name ?? "User";
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl p-6 text-white" style={{ background: "linear-gradient(135deg,#0EA5A4,#2563EB)", boxShadow: "0 8px 30px #0EA5A422" }}>
-        <h1 className="text-2xl font-bold">{greeting()}, Jonas</h1>
+        <h1 className="text-2xl font-bold">{greeting()}, {userName}</h1>
         <p className="mt-1 text-sm opacity-90">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · {dueWeek} filings due this week</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -215,6 +217,7 @@ export function EmployeeDashboard() {
 }
 
 export function ClientDashboard() {
+  const { data: currentUser } = useCurrentUser();
   const { data: filings = [], isLoading } = useFilings();
   const { data: docs = [] } = useDocuments();
   const { data: tasks = [] } = useTasks();
@@ -222,16 +225,16 @@ export function ClientDashboard() {
   const stageIdx = !filing ? -1 : clientStepperIndex(String(filing.status));
   const action = filing ? clientActionFor(String(filing.status)) : null;
   const overdue = filing ? isOverdue(String(filing.status), filing.due_date) : false;
-  // Deduplicated action items: filing-stage action + open tasks (single source of truth)
   const filingActions = filings
     .map((f) => ({ filing: f, action: clientActionFor(String(f.status)) }))
     .filter((x) => x.action && !isComplete(String(x.filing.status)));
+  const userName = currentUser?.name ?? "User";
 
   return (
     <div className="space-y-6">
       <div className="rounded-2xl p-6 text-white md:p-8" style={{ background: "linear-gradient(135deg,#6366F1,#2563EB)", boxShadow: "0 8px 30px #6366F122" }}>
         <div className="flex flex-wrap items-center gap-3">
-          <div><h1 className="text-2xl font-bold">Welcome, Acme Ltd</h1><p className="mt-1 text-sm opacity-85">Tax year 2026 · plain-language status below</p></div>
+          <div><h1 className="text-2xl font-bold">Welcome, {userName}</h1><p className="mt-1 text-sm opacity-85">Tax year 2026 · plain-language status below</p></div>
           <div className="ml-auto flex gap-2">
             <Link href="/client/documents" className="rounded-[10px] bg-white px-4 py-2.5 text-sm font-semibold text-[#1D4ED8]"><Upload size={14} className="mr-1 inline" /> Upload docs</Link>
             <Link href="/client/tax-filings" className="rounded-[10px] border border-white/50 px-4 py-2.5 text-sm font-semibold text-white">View all filings</Link>

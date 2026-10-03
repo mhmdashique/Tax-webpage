@@ -45,3 +45,18 @@ export const taxRuleSchema = z.object({
   recurrence_rule: z.string().min(1),
   auto_generate: z.boolean().default(false),
 });
+
+// --- Admin approval flow (separate layer; unrelated to email confirmation) ---
+export const approvalsQuerySchema = z.object({
+  status: z.enum(["pending", "approved", "rejected"]).default("pending"),
+});
+
+export const approveBodySchema = z.object({
+  // For client approvals: link the new client to an accountant (employee)
+  // in the same firm. Optional for employees.
+  assigned_employee_id: z.string().uuid().optional(),
+});
+
+export const rejectBodySchema = z.object({
+  reason: z.string().max(500).optional(),
+});

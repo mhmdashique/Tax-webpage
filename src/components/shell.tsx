@@ -3,13 +3,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { usePendingCount } from "./approvals";
 import { ThemeToggle } from "./ui";
 import {
   LayoutDashboard, Users, FileText, FolderOpen, MessagesSquare, CheckSquare,
   CreditCard, BarChart3, Settings, LifeBuoy, AlertTriangle, Gauge, User as UserIcon, History, LogOut, Menu, PenLine, Phone,
 } from "lucide-react";
 
-export type NavItem = { href: string; label: string; icon: React.ReactNode };
+export type NavItem = { href: string; label: string; icon: React.ReactNode; badge?: number };
 
 const ICONS: Record<string, React.ReactNode> = {
   dashboard: <LayoutDashboard size={20} />,
@@ -102,6 +103,12 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
   const { menu, support } = navFor(role);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Live pending-approval count for admins (Realtime-backed, 30s poll fallback).
+  const pendingCount = usePendingCount(role === "admin");
+  const menuWithBadges: NavItem[] =
+    role === "admin" && pendingCount > 0
+      ? menu.map((m) => (m.href === "/admin/team" ? { ...m, badge: pendingCount } : m))
+      : menu;
 
   async function handleLogout() {
     const sb = createClient();
@@ -116,7 +123,12 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
         <Link key={item.href} href={item.href} className={`nav-item flex items-center gap-3 px-3 py-2.5 text-sm font-medium ${active ? "active" : ""}`}
           style={active ? {} : { color: "var(--text)" }} onClick={() => setMobileOpen(false)}>
           <span className="shrink-0">{item.icon}</span>
-          {!collapsed && <span>{item.label}</span>}
+          {!collapsed && <span className="flex-1">{item.label}</span>}
+          {!collapsed && item.badge ? (
+            <span className="inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: "#2563EB" }}>
+              {item.badge}
+            </span>
+          ) : null}
         </Link>
       );
     });
@@ -137,7 +149,7 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
         <div className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
           <div>
             {!collapsed && <p className="eyebrow px-3 pb-2">Menu</p>}
-            <nav className="space-y-1">{renderNav(menu)}</nav>
+            <nav className="space-y-1">{renderNav(menuWithBadges)}</nav>
           </div>
           <div>
             {!collapsed && <p className="eyebrow px-3 pb-2">Support</p>}
@@ -172,7 +184,7 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 flex h-full w-72 flex-col p-4" style={{ background: "var(--sidebar-bg)" }}>
-            <nav className="space-y-1 overflow-y-auto">{renderNav([...menu, ...support])}</nav>
+            <nav className="space-y-1 overflow-y-auto">{renderNav([...menuWithBadges, ...support])}</nav>
             <div className="mt-auto flex items-center justify-between pt-4">
               <ThemeToggle />
               <button onClick={handleLogout} className="btn-ghost px-3 py-2 text-sm">Logout</button>
@@ -193,9 +205,25 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
           </div>
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden rounded-full px-2.5 py-1 text-[11px] font-bold sm:inline-block" style={{ background: `${ROLE_COLOR[role]}1f`, color: ROLE_COLOR[role] }}>{ROLE_CHIP[role]} · PRO</span>
-            <button className="btn-ghost relative p-2" aria-label="Notifications">
-              <span>🔔</span>
-            </button>
+            {role === "admin" ? (
+              <Link
+                href="/admin/team"
+                className="btn-ghost relative p-2"
+                aria-label={pendingCount > 0 ? `${pendingCount} pending approval requests` : "Notifications"}
+                title={pendingCount > 0 ? `${pendingCount} pending approval request${pendingCount === 1 ? "" : "s"} — review now` : "No pending approvals"}
+              >
+                <span>🔔</span>
+                {pendingCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-5 items-center justify-center rounded-full px-1 py-0.5 text-[10px] font-bold text-white" style={{ background: "#DC2626" }}>
+                    {pendingCount > 9 ? "9+" : pendingCount}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <button className="btn-ghost relative p-2" aria-label="Notifications">
+                <span>🔔</span>
+              </button>
+            )}
             <div className="hidden sm:block"><ThemeToggle /></div>
             <div className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white" style={{ background: ROLE_COLOR[role] }}>{name.slice(0, 1).toUpperCase()}</div>
           </div>

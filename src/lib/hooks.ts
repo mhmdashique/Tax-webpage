@@ -149,6 +149,20 @@ export function useClientDocuments(filters?: { filingId?: string; status?: strin
   return { ...swr, data: rows };
 }
 
+/** Current signed-in user's profile row (name, role, ...). Falls back to
+ *  user_metadata when the public.users row is not yet available. */
+export function useCurrentUser() {
+  return useSWR("current-user", async () => {
+    const sb = createClient();
+    if (!sb) return null;
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return null;
+    const { data } = await sb.from("users").select("name,role").eq("id", user.id).maybeSingle();
+    if (data) return data as { name: string; role: string };
+    return { name: (user.user_metadata as { name?: string } | undefined)?.name ?? user.email ?? "User", role: (user.user_metadata as { role?: string } | undefined)?.role ?? "" };
+  });
+}
+
 /** New + unreviewed documents across the viewer's clients (staff inbox). */
 export function useStaffInbox() {
   return useSWR<DocRow[]>(["staff-inbox"], async () => {

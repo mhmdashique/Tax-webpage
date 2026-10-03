@@ -13,6 +13,11 @@ export async function createServerSupabase() {
         try { cookiesToSet.forEach(({ name, value, options }) => store.set(name, value, options)); } catch {}
       },
     },
+    global: {
+      fetch: (url, options) => {
+        return fetch(url, { ...options, cache: "no-store" });
+      },
+    },
   });
 }
 

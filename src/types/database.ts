@@ -14,8 +14,9 @@ export type FilingStatus =
   | "in_review";
 export type TaskStatus = "todo" | "in_progress" | "done";
 
+export type ApprovalStatus = "pending" | "approved" | "rejected";
 export interface Firm { id: string; name: string; plan_tier?: string; default_currency?: string; timezone?: string; }
-export interface AppUser { id: string; firm_id: string; email: string; name: string; role: Role; avatar_url?: string | null; phone?: string | null; }
+export interface AppUser { id: string; firm_id: string; email: string; name: string; role: Role; avatar_url?: string | null; phone?: string | null; approval_status?: ApprovalStatus; requested_role?: Role | string | null; approved_by?: string | null; approved_at?: string | null; rejected_reason?: string | null; reviewed_at?: string | null; created_at?: string; }
 export interface Client { id: string; firm_id: string; assigned_employee_id?: string | null; linked_user_id?: string | null; name: string; email: string; business_name?: string | null; entity_type?: string | null; tax_id?: string | null; status: string; verified?: boolean; }
 export interface Filing { id: string; firm_id: string; client_id: string; tax_type: string; period: string; due_date: string; status: FilingStatus | string; amount_owed?: number | null; amount_refund?: number | null; filed_at?: string | null; client_name?: string; }
 export interface Task { id: string; firm_id: string; assigned_to?: string | null; related_client_id?: string | null; related_filing_id?: string | null; title: string; status: TaskStatus | string; priority: string; due_date?: string | null; }
