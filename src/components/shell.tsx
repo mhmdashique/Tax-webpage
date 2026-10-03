@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "./ui";
 import {
   LayoutDashboard, Users, FileText, FolderOpen, MessagesSquare, CheckSquare,
@@ -97,9 +98,16 @@ const ROLE_COLOR: Record<string, string> = { admin: "#2563EB", employee: "#0EA5A
 
 export function DashboardShell({ role, name, children, title }: { role: "admin" | "employee" | "client"; name: string; children: React.ReactNode; title?: string }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { menu, support } = navFor(role);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  async function handleLogout() {
+    const sb = createClient();
+    if (sb) await sb.auth.signOut();
+    router.push("/login");
+  }
 
   const renderNav = (items: NavItem[]) =>
     items.map((item) => {
@@ -152,7 +160,7 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
               </div>
             )}
             {!collapsed && (
-              <Link href="/login" className="btn-ghost p-2" aria-label="Logout"><LogOut size={15} /></Link>
+              <button onClick={handleLogout} className="btn-ghost p-2" aria-label="Logout"><LogOut size={15} /></button>
             )}
           </div>
           <button onClick={() => setCollapsed((c) => !c)} className="btn-ghost w-full py-1.5 text-xs">{collapsed ? "»" : "« Collapse"}</button>
@@ -167,7 +175,7 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
             <nav className="space-y-1 overflow-y-auto">{renderNav([...menu, ...support])}</nav>
             <div className="mt-auto flex items-center justify-between pt-4">
               <ThemeToggle />
-              <Link href="/login" className="btn-ghost px-3 py-2 text-sm">Logout</Link>
+              <button onClick={handleLogout} className="btn-ghost px-3 py-2 text-sm">Logout</button>
             </div>
           </aside>
         </div>

@@ -1,7 +1,7 @@
 "use client";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
-import type { Filing, Task, Client, Payment, ActivityItem, Jurisdiction, TaxType, JurisdictionTaxType, DocumentRequirement, ChecklistItem, DocRow } from "@/types/database";
+import type { Filing, Task, Client, Payment, ActivityItem, Jurisdiction, TaxType, JurisdictionTaxType, DocumentRequirement, ChecklistItem, DocRow, DocumentVersion } from "@/types/database";
 import { resolveRequirements } from "@/lib/checklist";
 
 async function fetchTable<T>(table: string, orderBy = "created_at"): Promise<T[]> {
@@ -166,5 +166,51 @@ export function useStaffInbox() {
       return (fb ?? []) as DocRow[];
     }
     return (data ?? []) as DocRow[];
+  });
+}
+
+/** Immutable version history for one logical document (graceful when the
+ *  0007 table is not migrated yet: returns [] and lets callers fall back
+ *  to the single current row). */
+export function useDocumentVersions(documentId: string | null) {
+  return useSWR<DocumentVersion[]>(documentId ? ["doc-versions", documentId] : null, async () => {
+    const sb = createClient();
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from("document_versions")
+      .select("*")
+      .eq("document_id", documentId as string)
+      .order("version_no", { ascending: true })
+      .limit(50);
+    if (error) return [];
+    return (data ?? []) as DocumentVersion[];
+  });
+}
+
+/** Firm users (id -> name/role) for uploader display. RLS scopes to own firm. */
+export function useUsers() {
+  return useSWR<{ id: string; name: string; role: string }[]>(["users-names"], async () => {
+    const sb = createClient();
+    if (!sb) return [];
+    const { data, error } = await sb.from("users").select("id,name,role").limit(200);
+    if (error) return [];
+    return (data ?? []) as { id: string; name: string; role: string }[];
+  });
+}
+
+/** All checklist rows with a linked document (staff review queue).
+ *  RLS scopes to accessible clients; capped for dashboard use. */
+export function useReviewItems() {
+  return useSWR<ChecklistItem[]>(["review-queue"], async () => {
+    const sb = createClient();
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from("filing_document_checklist")
+      .select("*")
+      .not("document_id", "is", null)
+      .order("updated_at", { ascending: false })
+      .limit(200);
+    if (error) return [];
+    return (data ?? []) as unknown as ChecklistItem[];
   });
 }

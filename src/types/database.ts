@@ -20,7 +20,8 @@ export interface Client { id: string; firm_id: string; assigned_employee_id?: st
 export interface Filing { id: string; firm_id: string; client_id: string; tax_type: string; period: string; due_date: string; status: FilingStatus | string; amount_owed?: number | null; amount_refund?: number | null; filed_at?: string | null; client_name?: string; }
 export interface Task { id: string; firm_id: string; assigned_to?: string | null; related_client_id?: string | null; related_filing_id?: string | null; title: string; status: TaskStatus | string; priority: string; due_date?: string | null; }
 export interface Payment { id: string; firm_id: string; client_id: string; invoice_number: string; amount: number; status: string; due_date: string; paid_at?: string | null; }
-export interface DocRow { id: string; firm_id: string; client_id: string; filing_id?: string | null; file_name: string; file_url: string; shared_with_client?: boolean; created_at: string; }
+export interface DocRow { id: string; firm_id: string; client_id: string; filing_id?: string | null; file_name: string; file_url: string; storage_path?: string | null; notes?: string | null; version_no?: number | null; uploaded_by?: string | null; reviewed_by?: string | null; reviewed_at?: string | null; shared_with_client?: boolean; created_at: string; }
+export interface DocumentVersion { id: string; document_id: string; version_no: number; file_name: string; file_url: string; storage_path?: string | null; uploaded_by?: string | null; created_at: string; }
 export interface ActivityItem { id: string; action: string; entity_type: string; entity_id?: string | null; created_at: string; actor_name?: string; }
 
 // Smart Documents taxonomy (supabase/migrations/0003_checklist.sql)
