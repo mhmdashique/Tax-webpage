@@ -5,6 +5,7 @@
   --color-accent-hover: #1d4ed8;
   --color-accent-tint: #dbeafe;
   --font-sans: var(--font-inter);
+  --font-display: var(--font-fraunces);
 }
 
 :root {
@@ -53,6 +54,11 @@
 
 * {
   border-color: var(--border);
+}
+
+::selection {
+  background: #2563eb;
+  color: #fff;
 }
 
 html {
@@ -139,6 +145,55 @@ body {
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
 
+/* Landing navbar links — plain CSS keyed off the `.dark` class
+   (the app themes via class, not OS preference, so Tailwind's
+   `dark:` media-query utilities must not be used here). */
+.nav-pill {
+  border-radius: 9999px;
+  color: var(--text-2);
+  transition: all 200ms ease-out;
+}
+.nav-pill:hover {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+.nav-pill:active {
+  background: var(--accent-tint);
+  color: var(--accent-hover);
+}
+.nav-pill.current {
+  background: var(--accent-tint);
+  color: var(--accent-hover);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+.dark .nav-pill.current {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.dark .nav-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.dark .nav-pill:active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.nav-link {
+  color: var(--text-2);
+  transition: color 200ms ease-out;
+}
+.nav-link:hover {
+  color: var(--accent);
+}
+.nav-link:active {
+  color: var(--accent-hover);
+}
+.nav-link.current {
+  color: var(--accent);
+}
+
 .row-hover:hover {
   background: color-mix(in srgb, var(--accent) 5%, transparent);
 }
@@ -167,4 +222,120 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Phase 1: Client theme tokens (TaxDesk client portal) ----------
+   Scoped under `.client-theme` so admin/employee keep the existing palette.
+   The wrapper is applied by the client layout (Phase 2); until then this
+   block is inert and changes nothing on screen.
+   Palette: calm financial — warm paper neutrals, deep ink-green primary,
+   muted brass accent (graphics/large accents only, never small body copy —
+   #B8893B on white is ~3.5:1 and fails AA for normal text). */
+
+.client-theme {
+  --bg: #F7F5F0;
+  --surface: #FFFFFF;
+  --surface-muted: #F0EDE6;
+  --surface-elev: #FFFFFF;
+  --border: #E4DFD3;
+  --text: #14211C;
+  --text-2: #5F6B65;
+  --text-muted: #5F6B65;
+  --primary: #0F3D33;
+  --primary-hover: #0B2E27;
+  --primary-tint: #E2ECE6;
+  --accent: #B8893B;
+  --accent-hover: #99702C;
+  --accent-tint: #F3EAD3;
+  --success: #1F7A4D;
+  --success-bg: #E1EFE6;
+  --success-tx: #175C3A;
+  --danger: #B3372F;
+  --danger-bg: #F7E3E0;
+  --danger-tx: #8A2922;
+  --warning: #B7791F;
+  --warn-bg: #F5EBD2;
+  --warn-tx: #77520F;
+  --sidebar-bg: #FCFBF7;
+  --glass: rgba(247, 245, 240, 0.85);
+  --shadow-card: 0 1px 2px rgba(20, 33, 28, 0.05), 0 10px 28px rgba(20, 33, 28, 0.06);
+  --radius-card: 12px;
+  --radius-input: 8px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-hover: 180ms;
+  color-scheme: light;
+}
+
+/* Dark mirror (the app themes via the `.dark` class on <html>). */
+.dark .client-theme {
+  --bg: #101512;
+  --surface: #1A201C;
+  --surface-muted: #222927;
+  --surface-elev: #232C28;
+  --border: #2E3631;
+  --text: #E9ECE8;
+  --text-2: #9AA5A0;
+  --text-muted: #9AA5A0;
+  --primary: #2E7D5B;
+  --primary-hover: #3A9070;
+  --primary-tint: #1D3229;
+  --accent: #C9A15A;
+  --accent-hover: #D9B96F;
+  --accent-tint: #2E2A1C;
+  --success: #3AA76D;
+  --success-bg: #152A1F;
+  --success-tx: #7BD8A4;
+  --danger: #D4695E;
+  --danger-bg: #2E1B18;
+  --danger-tx: #F0938A;
+  --warning: #D3A24C;
+  --warn-bg: #2C2514;
+  --warn-tx: #E8C37A;
+  --sidebar-bg: #141916;
+  --glass: rgba(16, 21, 18, 0.85);
+  --shadow-card: none;
+  color-scheme: dark;
+}
+
+/* Type scale: serif page titles, Inter section titles, tabular amounts. */
+.client-theme .client-page-title {
+  font-family: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+.client-theme .client-section-title {
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
+/* Radius system applied to shared primitives, client scope only. */
+.client-theme .card {
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+.client-theme .btn-primary,
+.client-theme .btn-ghost {
+  border-radius: var(--radius-input);
+}
+
+/* Consistent keyboard focus ring, client scope only. */
+.client-theme :focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Light page-enter fade (opt-in per page in Phase 3). */
+@media (prefers-reduced-motion: no-preference) {
+  .client-theme .client-enter {
+    animation: client-fade 200ms var(--ease-out);
+  }
+  @keyframes client-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 }
