@@ -367,10 +367,11 @@ body {
 .dark .lp-hero-orb-3 { background: radial-gradient(closest-side, rgba(168, 85, 247, 0.32), transparent) !important; opacity: 1 !important; }
 
 .dark .lp-gradient-text {
-  background: linear-gradient(100deg, #93c5fd 5%, #c4b5fd 50%, #67e8f9 95%) !important;
-  -webkit-background-clip: text;
-  background-clip: text;
+  background-image: linear-gradient(100deg, #93c5fd 5%, #c4b5fd 50%, #67e8f9 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
   color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
 }
 
 .dark .lp-stat,

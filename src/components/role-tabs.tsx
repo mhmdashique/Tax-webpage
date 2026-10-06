@@ -124,8 +124,8 @@ export function RoleTabs() {
   const role = ROLES.find((r) => r.key === active) ?? ROLES[0];
 
   return (
-    <div className="mt-8">
-      <div role="tablist" aria-label="Workspaces by role" className="mx-auto flex w-full max-w-xl items-center gap-1 rounded-2xl border p-1.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+    <div className="mt-10">
+      <div role="tablist" aria-label="Workspaces by role" className="mx-auto flex w-full max-w-2xl items-center gap-1 rounded-2xl border p-1.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         {ROLES.map(({ key, tab, Icon }) => {
           const selected = key === active;
           return (
@@ -134,31 +134,31 @@ export function RoleTabs() {
               role="tab"
               aria-selected={selected}
               onClick={() => setActive(key)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold transition-all"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-[15px] font-bold transition-all"
               style={
                 selected
                   ? { background: "linear-gradient(120deg,#2563EB,#6D28D9)", color: "#fff", boxShadow: "0 6px 18px rgba(37,99,235,.35)" }
                   : { color: "var(--text-2)" }
               }
             >
-              <Icon size={16} /> {tab}
+              <Icon size={17} /> {tab}
             </button>
           );
         })}
       </div>
 
-      <div key={role.key} className="mx-auto mt-4 grid max-w-4xl gap-5 overflow-hidden rounded-[28px] border p-7 md:grid-cols-2 md:p-9" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+      <div key={role.key} className="mx-auto mt-6 grid max-w-5xl gap-6 overflow-hidden rounded-[32px] border p-7 md:grid-cols-2 md:p-12" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         <div>
           <p className="eyebrow">For {role.tab.toLowerCase()}</p>
-          <h3 className="mt-2 text-2xl font-extrabold tracking-tight">{role.title}</h3>
-          <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>{role.d}</p>
-          <ul className="mt-5 space-y-2 text-sm font-medium">
+          <h3 className="mt-3 text-2xl font-extrabold tracking-tight md:text-3xl">{role.title}</h3>
+          <p className="mt-3 text-[15px] leading-relaxed md:text-base" style={{ color: "var(--text-2)" }}>{role.d}</p>
+          <ul className="mt-6 space-y-2.5 text-[15px] font-medium">
             {role.li.map((x) => (
-              <li key={x} className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-600" /> {x}</li>
+              <li key={x} className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-600" /> {x}</li>
             ))}
           </ul>
-          <Link href="/signup" className="btn-primary mt-6 inline-flex items-center gap-2 px-5 py-2.5">
-            Get started <ArrowRight size={15} />
+          <Link href="/signup" className="btn-primary mt-8 inline-flex items-center gap-2 px-6 py-3 text-[15px]">
+            Get started <ArrowRight size={16} />
           </Link>
         </div>
         <div className="rounded-2xl border p-5" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>

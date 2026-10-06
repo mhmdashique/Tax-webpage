@@ -200,10 +200,11 @@ export default function LandingPage() {
             <span
               className="lp-gradient-text"
               style={{
-                background: "linear-gradient(100deg,#2563EB 10%,#7C3AED 55%,#0EA5E9 90%)",
+                backgroundImage: "linear-gradient(100deg,#2563EB 10%,#7C3AED 55%,#0EA5E9 90%)",
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 color: "transparent",
+                WebkitTextFillColor: "transparent",
               }}
             >
               — one calm workspace.
@@ -337,10 +338,10 @@ export default function LandingPage() {
 
           </div>
 
-          <p className="mt-8 text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-2)" }}>
+          <p className="mt-10 text-[13px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--text-2)" }}>
             Trusted by independent tax firms & bookkeepers
           </p>
-          <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-bold opacity-60">
+          <div className="mx-auto mt-5 flex max-w-4xl flex-wrap items-center justify-center gap-x-10 gap-y-2 text-base font-bold opacity-60">
             {["Acme Tax Co.", "BrightBooks", "North & Lee", "Ledgerline", "Pivot Tax"].map((b) => (
               <span key={b} className="tracking-tight">◆ {b}</span>
             ))}
@@ -349,33 +350,33 @@ export default function LandingPage() {
       </section>
 
       {/* Roles */}
-      <section id="product" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-16">
+      <section id="product" className="mx-auto max-w-7xl scroll-mt-20 px-6 py-20 md:py-24">
         <p className="eyebrow text-center">One platform · three workspaces</p>
-        <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-extrabold tracking-tight md:text-4xl">
+        <h2 className="mx-auto mt-4 max-w-3xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
           Built for every seat in your firm
         </h2>
-        <p className="mx-auto mt-3 max-w-xl text-center text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
+        <p className="mx-auto mt-4 max-w-2xl text-center text-[15px] leading-relaxed md:text-base" style={{ color: "var(--text-2)" }}>
           No more forwarding emails or chasing folders. Everyone sees exactly what they need — nothing they don&rsquo;t.
         </p>
         <RoleTabs />
       </section>
 
       {/* Features grid */}
-      <section className="mx-auto max-w-7xl px-4 py-6">
-        <div className="lp-panel rounded-[28px] border p-8 md:p-12" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <section className="mx-auto max-w-7xl px-6 py-8">
+        <div className="lp-panel rounded-[32px] border p-8 md:p-14" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="eyebrow">Everything to run tax season</p>
-              <h2 className="mt-2 max-w-xl text-2xl font-extrabold tracking-tight md:text-3xl">Stop stitching tools together. TaxDesk does it all.</h2>
+              <h2 className="mt-3 max-w-2xl text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">Stop stitching tools together. TaxDesk does it all.</h2>
             </div>
-            <Link href="/signup" className="btn-primary inline-flex shrink-0 items-center gap-2 px-5 py-2.5">Explore the workspace <ArrowRight size={15} /></Link>
+            <Link href="/signup" className="btn-primary inline-flex shrink-0 items-center gap-2 px-6 py-3 text-[15px]">Explore the workspace <ArrowRight size={16} /></Link>
           </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((f) => (
-              <div key={f.t} className="lp-feature group rounded-2xl border p-5 transition-all hover:-translate-y-1 hover:shadow-xl" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110" style={{ background: "var(--accent-tint)", color: "var(--accent)" }}>{f.icon}</div>
-                <h3 className="mt-3.5 text-[15px] font-bold">{f.t}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>{f.d}</p>
+              <div key={f.t} className="lp-feature group rounded-2xl border p-6 transition-all hover:-translate-y-1 hover:shadow-xl" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl transition-transform group-hover:scale-110" style={{ background: "var(--accent-tint)", color: "var(--accent)" }}>{f.icon}</div>
+                <h3 className="mt-4 text-base font-bold md:text-[17px]">{f.t}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed" style={{ color: "var(--text-2)" }}>{f.d}</p>
               </div>
             ))}
           </div>
@@ -383,35 +384,35 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section id="how" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-16">
+      <section id="how" className="mx-auto max-w-7xl scroll-mt-20 px-6 py-20 md:py-24">
         <p className="eyebrow text-center">How it works</p>
-        <h2 className="mx-auto mt-3 max-w-2xl text-center text-3xl font-extrabold tracking-tight md:text-4xl">From chaos to calm in three steps</h2>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <h2 className="mx-auto mt-4 max-w-3xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">From chaos to calm in three steps</h2>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
           {steps.map((s, i) => (
-            <div key={s.n} className="lp-step relative overflow-hidden rounded-3xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              <span className="tnum text-5xl font-extrabold opacity-10">{s.n}</span>
-              <h3 className="mt-2 text-base font-bold">{s.t}</h3>
-              <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>{s.d}</p>
+            <div key={s.n} className="lp-step relative overflow-hidden rounded-3xl border p-7 md:p-8" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+              <span className="tnum text-6xl font-extrabold opacity-10">{s.n}</span>
+              <h3 className="mt-3 text-lg font-bold">{s.t}</h3>
+              <p className="mt-2.5 text-[15px] leading-relaxed" style={{ color: "var(--text-2)" }}>{s.d}</p>
               {i < 2 && <ChevronRight size={18} className="absolute right-4 top-6 hidden opacity-30 md:block" />}
             </div>
           ))}
         </div>
 
         {/* Automation highlight */}
-        <div className="card lp-panel mt-4 grid gap-8 overflow-hidden p-8 md:grid-cols-2 md:p-12">
+        <div className="card lp-panel mt-6 grid gap-10 overflow-hidden p-8 md:grid-cols-2 md:p-14">
           <div>
-            <p className="eyebrow flex items-center gap-2"><Zap size={13} className="text-[#2563EB]" /> Automated deadline engine</p>
-            <h2 className="mt-3 text-2xl font-extrabold tracking-tight md:text-3xl">Tax-rule templates that generate the next period for you.</h2>
-            <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
+            <p className="eyebrow flex items-center gap-2"><Zap size={14} className="text-[#2563EB]" /> Automated deadline engine</p>
+            <h2 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">Tax-rule templates that generate the next period for you.</h2>
+            <p className="mt-4 text-[15px] leading-relaxed md:text-base" style={{ color: "var(--text-2)" }}>
               Define VAT, corporate tax and payroll recurrences once per jurisdiction. TaxDesk auto-creates
               next-period filings, assigns owners, and fires reminders — no spreadsheet babysitting.
             </p>
-            <ul className="mt-5 space-y-2 text-sm font-medium">
+            <ul className="mt-6 space-y-2.5 text-[15px] font-medium">
               {["Pre-built UK, US & EU templates", "Auto owner assignment", "Smart reminders by email + portal"].map((x) => (
-                <li key={x} className="flex items-center gap-2"><CheckCircle2 size={15} className="text-emerald-600" /> {x}</li>
+                <li key={x} className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-600" /> {x}</li>
               ))}
             </ul>
-            <Link href="/signup" className="btn-primary mt-6 inline-flex px-5 py-2.5">Try templates free</Link>
+            <Link href="/signup" className="btn-primary mt-8 inline-flex px-6 py-3 text-[15px]">Try templates free</Link>
           </div>
           <div className="lp-side rounded-2xl border p-4" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
             <p className="eyebrow mb-3 flex items-center gap-2"><Clock3 size={14} /> Upcoming auto-generated</p>
@@ -435,28 +436,28 @@ export default function LandingPage() {
       </section>
 
       {/* Security */}
-      <section id="security" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-6">
-        <div className="lp-security relative overflow-hidden rounded-[28px] p-8 text-white md:p-12" style={{ background: "linear-gradient(135deg,#0F172A 0%,#1E3A8A 60%,#4C1D95 130%)" }}>
+      <section id="security" className="mx-auto max-w-7xl scroll-mt-20 px-6 py-8">
+        <div className="lp-security relative overflow-hidden rounded-[32px] p-8 text-white md:p-14" style={{ background: "linear-gradient(135deg,#0F172A 0%,#1E3A8A 60%,#4C1D95 130%)" }}>
           <div aria-hidden className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-          <div className="relative grid gap-8 md:grid-cols-2">
+          <div className="relative grid gap-10 md:grid-cols-2">
             <div>
-              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] opacity-70"><Lock size={13} /> Enterprise-grade trust</p>
-              <h2 className="mt-3 text-2xl font-extrabold tracking-tight md:text-3xl">Your client data stays locked down — and auditable.</h2>
-              <p className="mt-3 text-sm leading-relaxed opacity-75">Role-based access, approval gates and a full audit trail on every upload, signature and status change.</p>
-              <Link href="/signup" className="mt-6 inline-flex items-center gap-2 rounded-[10px] bg-white px-5 py-2.5 text-sm font-bold text-slate-900 transition-all hover:-translate-y-0.5 hover:shadow-xl">
-                Secure my firm <ArrowRight size={15} />
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] opacity-70"><Lock size={14} /> Enterprise-grade trust</p>
+              <h2 className="mt-4 text-2xl font-extrabold tracking-tight sm:text-3xl md:text-4xl">Your client data stays locked down — and auditable.</h2>
+              <p className="mt-4 text-[15px] leading-relaxed opacity-75 md:text-base">Role-based access, approval gates and a full audit trail on every upload, signature and status change.</p>
+              <Link href="/signup" className="mt-8 inline-flex items-center gap-2 rounded-[10px] bg-white px-6 py-3 text-[15px] font-bold text-slate-900 transition-all hover:-translate-y-0.5 hover:shadow-xl">
+                Secure my firm <ArrowRight size={16} />
               </Link>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               {[
                 ["Role isolation", "Admins, staff & clients see only what they should."],
                 ["Approval gates", "Nothing goes live without the right sign-off."],
                 ["Audit trail", "Who did what, when — exportable anytime."],
                 ["Encrypted + backed up", "TLS in transit, encrypted at rest."],
               ].map(([t, d]) => (
-                <div key={t} className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                  <p className="flex items-center gap-1.5 text-sm font-bold"><CheckCircle2 size={14} className="text-emerald-300" /> {t}</p>
-                  <p className="mt-1.5 text-xs leading-relaxed opacity-75">{d}</p>
+                <div key={t} className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur">
+                  <p className="flex items-center gap-1.5 text-[15px] font-bold"><CheckCircle2 size={15} className="text-emerald-300" /> {t}</p>
+                  <p className="mt-2 text-[13px] leading-relaxed opacity-75">{d}</p>
                 </div>
               ))}
             </div>
@@ -465,17 +466,17 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="mx-auto max-w-7xl px-4 py-16">
+      <section className="mx-auto max-w-7xl px-6 py-20 md:py-24">
         <p className="eyebrow text-center">Loved by busy firms</p>
-        <h2 className="mx-auto mt-3 max-w-xl text-center text-3xl font-extrabold tracking-tight">Tax season, without the panic</h2>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <h2 className="mx-auto mt-4 max-w-2xl text-center text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">Tax season, without the panic</h2>
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
           {testimonials.map((t) => (
-            <figure key={t.n} className="lp-quote flex flex-col rounded-3xl border p-6" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+            <figure key={t.n} className="lp-quote flex flex-col rounded-3xl border p-7 md:p-8" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
               <div className="flex gap-0.5 text-amber-400">{"★★★★★"}</div>
-              <blockquote className="mt-3 flex-1 text-sm leading-relaxed">“{t.q}”</blockquote>
-              <figcaption className="mt-4 border-t pt-4" style={{ borderColor: "var(--border)" }}>
-                <p className="text-sm font-bold">{t.n}</p>
-                <p className="text-xs" style={{ color: "var(--text-2)" }}>{t.r}</p>
+              <blockquote className="mt-4 flex-1 text-[15px] leading-relaxed md:text-base">“{t.q}”</blockquote>
+              <figcaption className="mt-5 border-t pt-5" style={{ borderColor: "var(--border)" }}>
+                <p className="text-[15px] font-bold">{t.n}</p>
+                <p className="text-[13px]" style={{ color: "var(--text-2)" }}>{t.r}</p>
               </figcaption>
             </figure>
           ))}
@@ -483,43 +484,43 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="mx-auto max-w-3xl scroll-mt-20 px-4 pb-16">
-        <h2 className="text-center text-3xl font-extrabold tracking-tight">Questions, answered</h2>
-        <div className="mt-8 space-y-3">
+      <section id="faq" className="mx-auto max-w-4xl scroll-mt-20 px-6 pb-20">
+        <h2 className="text-center text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">Questions, answered</h2>
+        <div className="mt-10 space-y-4">
           {faqs.map((f) => (
-            <details key={f.q} className="lp-faq group rounded-2xl border px-5 py-4" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
-              <summary className="cursor-pointer list-none text-sm font-bold">
-                <span className="flex items-center justify-between gap-4">{f.q}<span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg font-normal transition-transform group-open:rotate-45" style={{ background: "var(--accent-tint)", color: "var(--accent)" }}>+</span></span>
+            <details key={f.q} className="lp-faq group rounded-2xl border px-6 py-5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+              <summary className="cursor-pointer list-none text-[15px] font-bold md:text-base">
+                <span className="flex items-center justify-between gap-4">{f.q}<span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xl font-normal transition-transform group-open:rotate-45" style={{ background: "var(--accent-tint)", color: "var(--accent)" }}>+</span></span>
               </summary>
-              <p className="mt-2.5 text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>{f.a}</p>
+              <p className="mt-3 text-[15px] leading-relaxed" style={{ color: "var(--text-2)" }}>{f.a}</p>
             </details>
           ))}
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="mx-auto max-w-7xl px-4 pb-16">
-        <div className="lp-cta relative overflow-hidden rounded-[28px] px-6 py-12 text-center text-white md:p-16" style={{ background: "linear-gradient(120deg,#0B1533 0%,#1E3A8A 55%,#4C1D95 130%)" }}>
+      <section className="mx-auto max-w-7xl px-6 pb-20">
+        <div className="lp-cta relative overflow-hidden rounded-[32px] px-6 py-14 text-center text-white md:p-20" style={{ background: "linear-gradient(120deg,#0B1533 0%,#1E3A8A 55%,#4C1D95 130%)" }}>
           <div aria-hidden className="absolute left-1/2 top-0 h-64 w-[560px] -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
-          <div className="relative mx-auto max-w-2xl">
+          <div className="relative mx-auto max-w-3xl">
             <p className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-white/70">
-              <Sparkles size={13} className="text-amber-300" /> Join 300+ modern firms
+              <Sparkles size={14} className="text-amber-300" /> Join 300+ modern firms
             </p>
-            <h2 className="mt-4 text-3xl font-extrabold leading-[1.08] tracking-tight md:text-[42px]">
+            <h2 className="mt-5 text-3xl font-extrabold leading-[1.08] tracking-tight sm:text-4xl md:text-5xl">
               Ready to run tax season on autopilot?
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed opacity-75 md:text-[15px]">
+            <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed opacity-75 md:text-lg">
               Import clients today, send portal invites tonight, wake up to organized deadlines tomorrow.
             </p>
-            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/signup" className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] bg-white px-8 py-3.5 text-sm font-bold text-slate-900 transition-all hover:-translate-y-0.5 hover:shadow-2xl sm:w-auto">
-                Get Started free <ArrowRight size={16} />
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link href="/signup" className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] bg-white px-9 py-4 text-[15px] font-bold text-slate-900 transition-all hover:-translate-y-0.5 hover:shadow-2xl sm:w-auto">
+                Get Started free <ArrowRight size={17} />
               </Link>
-              <Link href="/login" className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] border border-white/40 px-8 py-3.5 text-sm font-bold text-white transition-all hover:bg-white/10 sm:w-auto">
+              <Link href="/login" className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] border border-white/40 px-9 py-4 text-[15px] font-bold text-white transition-all hover:bg-white/10 sm:w-auto">
                 Log in
               </Link>
             </div>
-            <p className="mt-5 text-xs font-medium opacity-60">Free to start · No credit card · Onboard your first client in minutes</p>
+            <p className="mt-6 text-[13px] font-medium opacity-60">Free to start · No credit card · Onboard your first client in minutes</p>
           </div>
         </div>
       </section>
