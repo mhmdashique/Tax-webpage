@@ -1,1 +1,0 @@
-﻿import Link from "next/link"; export default function P(){ return <div className="mx-auto max-w-3xl p-10 text-center"><h1 className="text-3xl font-bold">Pricing</h1><p className="mt-2 text-sm" style={{color:"var(--text-2)"}}>Starter $29 · Pro $79 · Firm Custom</p><Link href="/signup" className="btn-primary mt-6 inline-block px-6 py-3">Start Free</Link></div>; }
