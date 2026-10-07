@@ -1,1 +1,1 @@
-﻿"use client"; import { HistoryView } from "@/components/portals"; export default function P(){ return <HistoryView/>; }
+﻿"use client"; import { ClientHistoryPremium } from "@/components/client-premium"; export default function P(){ return <ClientHistoryPremium/>; }

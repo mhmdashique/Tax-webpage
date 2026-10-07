@@ -1,7 +1,7 @@
 "use client";
 import useSWR from "swr";
 import { createClient } from "@/lib/supabase/client";
-import type { Filing, Task, Client, Payment, ActivityItem, Jurisdiction, TaxType, JurisdictionTaxType, DocumentRequirement, ChecklistItem, DocRow, DocumentVersion } from "@/types/database";
+import type { Filing, Task, Client, Payment, ActivityItem, Jurisdiction, TaxType, JurisdictionTaxType, DocumentRequirement, ChecklistItem, DocRow, DocumentVersion, Message } from "@/types/database";
 import { resolveRequirements } from "@/lib/checklist";
 
 async function fetchTable<T>(table: string, orderBy = "created_at"): Promise<T[]> {
@@ -213,14 +213,30 @@ export function useDocumentVersions(documentId: string | null) {
   });
 }
 
-/** Firm users (id -> name/role) for uploader display. RLS scopes to own firm. */
-export function useUsers() {
-  return useSWR<{ id: string; name: string; role: string }[]>(["users-names"], async () => {
+/** Direct messages for the signed-in user (sender or recipient).
+ *  RLS scopes to participants; refreshes every 5s for live chat. */
+export function useMessages() {
+  return useSWR<Message[]>(["messages"], async () => {
     const sb = createClient();
     if (!sb) return [];
-    const { data, error } = await sb.from("users").select("id,name,role").limit(200);
+    const { data, error } = await sb
+      .from("messages")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .limit(500);
+    if (error) throw error;
+    return (data ?? []) as Message[];
+  }, { refreshInterval: 5000 });
+}
+
+/** Firm users (id -> name/role) for uploader display. RLS scopes to own firm. */
+export function useUsers() {
+  return useSWR<{ id: string; name: string; role: string; approval_status?: string }[]>(["users-names"], async () => {
+    const sb = createClient();
+    if (!sb) return [];
+    const { data, error } = await sb.from("users").select("id,name,role,approval_status").limit(200);
     if (error) return [];
-    return (data ?? []) as { id: string; name: string; role: string }[];
+    return (data ?? []) as { id: string; name: string; role: string; approval_status?: string }[];
   });
 }
 

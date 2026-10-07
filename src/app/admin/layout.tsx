@@ -14,5 +14,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect(role ? `/${role}/dashboard` : "/login");
   }
 
-  return <DashboardShell role="admin" name={name}>{children}</DashboardShell>;
+  return (
+    <div className="theme-admin">
+      <DashboardShell role="admin" name={name}>{children}</DashboardShell>
+    </div>
+  );
 }

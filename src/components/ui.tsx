@@ -4,14 +4,15 @@ import { useTheme } from "./theme-provider";
 import { Moon, Sun, X } from "lucide-react";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
-  const { theme, toggle } = useTheme();
+  const { resolved, toggle } = useTheme();
   return (
     <button
       onClick={toggle}
-      aria-label="Toggle theme"
+      aria-label={resolved === "dark" ? "Switch to light mode" : "Switch to night mode"}
+      title={resolved === "dark" ? "Switch to light mode" : "Switch to night mode"}
       className={`btn-ghost inline-flex h-9 w-9 items-center justify-center ${className}`}
     >
-      {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+      {resolved === "dark" ? <Sun size={16} /> : <Moon size={16} />}
     </button>
   );
 }

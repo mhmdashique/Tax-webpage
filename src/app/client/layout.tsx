@@ -12,5 +12,9 @@ export default async function ClientLayout({ children }: { children: React.React
   if (approvalStatus !== "approved") redirect("/pending-approval");
   if (role !== "client") redirect(role ? `/${role}/dashboard` : "/login");
 
-  return <DashboardShell role="client" name={name}>{children}</DashboardShell>;
+  return (
+    <div className="client-theme">
+      <DashboardShell role="client" name={name}>{children}</DashboardShell>
+    </div>
+  );
 }

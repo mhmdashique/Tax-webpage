@@ -1,1 +1,1 @@
-﻿"use client"; import { PaymentsView } from "@/components/entities"; export default function P(){ return <PaymentsView role="client"/>; }
+﻿"use client"; import { ClientPaymentsPremium } from "@/components/client-premium"; export default function P(){ return <ClientPaymentsPremium/>; }

@@ -1,1 +1,1 @@
-﻿"use client"; import { EmployeeDashboard } from "@/components/portals"; export default function P(){ return <EmployeeDashboard/>; }
+﻿"use client"; import { EmployeeDashboardPremium } from "@/components/employee-premium"; export default function P(){ return <EmployeeDashboardPremium/>; }

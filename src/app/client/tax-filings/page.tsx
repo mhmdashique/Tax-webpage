@@ -1,1 +1,1 @@
-﻿"use client"; import { FilingsView } from "@/components/entities"; export default function P(){ return <FilingsView role="client"/>; }
+﻿"use client"; import { ClientFilingsPremium } from "@/components/client-premium"; export default function P(){ return <ClientFilingsPremium/>; }

@@ -25,7 +25,10 @@ export interface TaskEvent { id: string; task_id: string; event: "created" | "se
 export interface Payment { id: string; firm_id: string; client_id: string; invoice_number: string; amount: number; status: string; due_date: string; paid_at?: string | null; }
 export interface DocRow { id: string; firm_id: string; client_id: string; filing_id?: string | null; file_name: string; file_url: string; storage_path?: string | null; notes?: string | null; version_no?: number | null; uploaded_by?: string | null; reviewed_by?: string | null; reviewed_at?: string | null; shared_with_client?: boolean; created_at: string; }
 export interface DocumentVersion { id: string; document_id: string; version_no: number; file_name: string; file_url: string; storage_path?: string | null; uploaded_by?: string | null; created_at: string; }
+export interface Message { id: string; firm_id?: string | null; thread_id?: string | null; sender_id?: string | null; recipient_id?: string | null; body: string; read_at?: string | null; created_at: string; }
 export interface ActivityItem { id: string; action: string; entity_type: string; entity_id?: string | null; created_at: string; actor_name?: string; }
+export type TicketStatus = "Open" | "In Progress" | "On Hold" | "Resolved" | "Closed" | "Reopened";
+export interface TicketRow { id: string; ticket_no: string; firm_id?: string | null; created_by_id?: string | null; created_by_role: string; client_id?: string | null; project_label?: string | null; subject: string; category: string; priority: string; description: string; status: TicketStatus | string; assigned_to?: string | null; attachment_url?: string | null; attachment_name?: string | null; closed_by?: string | null; closed_at?: string | null; closing_remark?: string | null; created_at?: string; updated_at?: string; }
 
 // Smart Documents taxonomy (supabase/migrations/0003_checklist.sql)
 export interface Jurisdiction { id: string; iso_code: string; name: string; default_currency?: string | null; region?: string | null; parent_id?: string | null; is_active?: boolean; }

@@ -1,1 +1,1 @@
-﻿"use client"; import { ClientDashboard } from "@/components/portals"; export default function P(){ return <ClientDashboard/>; }
+﻿"use client"; import { ClientDashboardPremium } from "@/components/client-premium"; export default function P(){ return <ClientDashboardPremium/>; }

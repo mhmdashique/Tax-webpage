@@ -7,9 +7,9 @@ import {
   useMyClient, useCurrentUser, useJurisdictions, useTaxTypes, useJurisdictionTaxType,
   useRequirements, useChecklist, useClientDocuments, useDocumentVersions,
 } from "@/lib/hooks";
-import { groupRequirements, checklistProgress, suggestRequirement, isoFlag, CHECKLIST_STATUS_TONE } from "@/lib/checklist";
+import { groupRequirements, checklistProgress, suggestRequirement, isoFlag } from "@/lib/checklist";
 import { downloadFile } from "@/lib/data";
-import { Upload, Download, Trash2, FolderOpen, FileCheck2, Replace, ChevronDown, ChevronRight, Search, RotateCcw, Eye, Pencil, History } from "lucide-react";
+import { Upload, Download, Trash2, FolderOpen, FileCheck2, Replace, ChevronDown, ChevronRight, Search, RotateCcw, Eye, Pencil, History, FileText, CheckCircle2, Clock3, ShieldCheck, MapPin, Building2, Hash, StickyNote, CalendarDays, CloudUpload, Sparkles, ArrowRight } from "lucide-react";
 import type { DocumentRequirement, ChecklistItem, Jurisdiction, TaxType, DocRow, DocumentVersion } from "@/types/database";
 
 const LAST_COUNTRY_KEY = "taxdesk-docs-country";
@@ -21,6 +21,57 @@ function statusLabel(s: string): string {
   const map: Record<string, string> = { pending: "Pending", uploaded: "Uploaded", received: "Received", rejected: "Rejected", waived: "Waived" };
   return map[s] ?? s.replace(/_/g, " ");
 }
+
+/* ---------- Premium vault helpers (UI only) ---------- */
+const VAULT_BLUE = "#2563EB";
+
+function fileIcon(name: string) {
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  const bg =
+    ext === "pdf" ? "#FEE2E2" : ["xls", "xlsx", "csv"].includes(ext) ? "#DCFCE7"
+    : ["jpg", "jpeg", "png"].includes(ext) ? "#E0E7FF"
+    : ["doc", "docx", "txt"].includes(ext) ? "#FEF3C7" : "var(--accent-tint)";
+  const fg =
+    ext === "pdf" ? "#DC2626" : ["xls", "xlsx", "csv"].includes(ext) ? "#16A34A"
+    : ["jpg", "jpeg", "png"].includes(ext) ? "#4F46E5"
+    : ["doc", "docx", "txt"].includes(ext) ? "#D97706" : VAULT_BLUE;
+  return (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: bg, color: fg }}>
+      <FileText size={18} />
+    </span>
+  );
+}
+
+function statusDot(s: string): string {
+  if (s === "received") return "#16A34A";
+  if (s === "rejected") return "#DC2626";
+  if (s === "uploaded") return VAULT_BLUE;
+  return "#F59E0B";
+}
+
+function ProgressRing({ received, required }: { received: number; required: number }) {
+  const pct = required === 0 ? 100 : Math.round((received / required) * 100);
+  const r = 26;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="flex items-center gap-3">
+      <div className="relative h-[64px] w-[64px] shrink-0">
+        <svg viewBox="0 0 64 64" className="h-full w-full -rotate-90">
+          <circle cx="32" cy="32" r={r} fill="none" strokeWidth="7" style={{ stroke: "var(--hero-track)" }} />
+          <circle cx="32" cy="32" r={r} fill="none" stroke={VAULT_BLUE} strokeWidth="7" strokeLinecap="round"
+            strokeDasharray={c} strokeDashoffset={c - (c * pct) / 100} style={{ transition: "stroke-dashoffset .6s ease" }} />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold" style={{ color: "var(--text)" }}>{pct}%</span>
+      </div>
+      <div>
+        <p className="tnum text-lg font-bold leading-none" style={{ color: "var(--text)" }}>{received}/{required}</p>
+        <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#64748B" }}>required received</p>
+      </div>
+    </div>
+  );
+}
+
+const inputCls = "mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm font-normal outline-none transition-all focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15";
 
 function regionOf(j: Jurisdiction): string {
   const r = (j.region ?? "").trim();
@@ -152,7 +203,7 @@ function CountryDropdown({
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => { if (e.key === "ArrowDown" && !open) { e.preventDefault(); setOpen(true); } }}
-        className="mt-1 flex w-full items-center gap-2 rounded-[10px] border px-3 py-2.5 text-left text-sm font-normal"
+        className="mt-1.5 flex w-full items-center gap-2 rounded-xl border px-3.5 py-2.5 text-left text-sm font-normal transition-all focus:border-[#2563EB]"
         style={{ borderColor: "var(--border)", background: "var(--bg)" }}
       >
         <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
@@ -310,7 +361,7 @@ function TaxTypeDropdown({
         disabled={disabled}
         onClick={() => !disabled && setOpen((o) => !o)}
         onKeyDown={(e) => { if (e.key === "ArrowDown" && !open && !disabled) { e.preventDefault(); setOpen(true); } }}
-        className="mt-1 flex w-full items-center gap-2 rounded-[10px] border px-3 py-2.5 text-left text-sm font-normal disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-1.5 flex w-full items-center gap-2 rounded-xl border px-3.5 py-2.5 text-left text-sm font-normal transition-all focus:border-[#2563EB] disabled:cursor-not-allowed disabled:opacity-50"
         style={{ borderColor: "var(--border)", background: "var(--bg)" }}
         title={disabled ? "Select a country first" : "Select tax type"}
       >
@@ -875,18 +926,37 @@ export function ClientDocumentsView() {
     : "";
 
   return (
-    <div className="space-y-4">
-      {/* 1. Header (kept) */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div><h1 className="text-2xl font-bold">Documents</h1><p className="text-sm" style={{ color: "var(--text-2)" }}>Upload, share and download files</p></div>
-        <div className="ml-auto flex gap-2">
-          <label className={`btn-primary cursor-pointer px-4 py-2.5 text-sm ${!ready ? "opacity-50" : ""}`} title={!ready ? "Select country, tax type and period first" : "Upload docs"}>
-            {busy ? "Uploading…" : "Upload docs"}
-            <input type="file" className="hidden" multiple accept={ACCEPT} onChange={(e) => { stageFiles(e.target.files); e.target.value = ""; }} />
-          </label>
-          <Button variant="ghost" onClick={bulkZip}><Download size={15} /> Bulk ZIP</Button>
+    <div className="space-y-5">
+      {/* 1. Vault hero */}
+      <section className="relative overflow-hidden rounded-2xl p-5 md:p-6" style={{ background: "var(--hero-bg)", border: "1px solid var(--hero-border)" }}>
+        <div aria-hidden className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full" style={{ background: "radial-gradient(closest-side,rgba(37,99,235,.10),transparent)" }} />
+        <div className="relative flex flex-wrap items-center gap-5">
+          <div className="min-w-0 flex-1">
+            <p className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em]" style={{ background: "var(--hero-chip-bg)", color: "var(--hero-chip-tx)" }}>
+              <Sparkles size={12} /> Vault · {country?.name ?? "Pick a filing"} {selectedTaxLabel ? `· ${selectedTaxLabel}` : ""}
+            </p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight md:text-[28px]" style={{ fontFamily: "var(--font-fraunces),Georgia,serif", color: "var(--hero-text)" }}>Documents</h1>
+            <p className="mt-1 max-w-xl text-sm" style={{ color: "var(--hero-sub)" }}>
+              {progress.required > 0
+                ? `${progress.received} of ${progress.required} required received${period ? ` · Period ${period}` : ""} — upload once, your checklist and accountant review stay linked.`
+                : "Upload, share and download files — pick a country, tax type and period to get your checklist."}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <label className={`inline-flex cursor-pointer items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5 ${!ready ? "opacity-50" : ""}`} style={{ background: VAULT_BLUE }} title={!ready ? "Select country, tax type and period first" : "Upload docs"}>
+                <CloudUpload size={15} />{busy ? `Uploading ${busy}…` : "Upload docs"}
+                <input type="file" className="hidden" multiple accept={ACCEPT} onChange={(e) => { stageFiles(e.target.files); e.target.value = ""; }} />
+              </label>
+              <button onClick={bulkZip} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors hover:bg-slate-50" style={{ borderColor: "#BFDBFE", color: VAULT_BLUE }}>
+                <Download size={15} /> Bulk ZIP
+              </button>
+              {!ready && <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: "#64748B" }}><ArrowRight size={13} /> Select filing details below to enable uploads</span>}
+            </div>
+          </div>
+          <div className="rounded-2xl p-4" style={{ background: "var(--hero-card-bg)", border: "1px solid var(--hero-border)" }}>
+            <ProgressRing received={progress.received} required={progress.required} />
+          </div>
         </div>
-      </div>
+      </section>
       {!sbConfigured && (
         <p className="rounded-xl px-4 py-2 text-xs" style={{ background: "var(--warn-bg)", color: "var(--warn-tx)" }}>
           Demo mode (no Supabase): the form below is fully interactive, but uploads need a connected project.
@@ -895,9 +965,18 @@ export function ClientDocumentsView() {
 
       {/* 2. Filing details */}
       <Card>
-        <h2 className="mb-3 font-semibold">Filing details</h2>
-        <div className="grid gap-3 overflow-visible md:grid-cols-3">
-          <div className="text-sm font-medium">Country *
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "var(--accent-tint)", color: VAULT_BLUE }}><MapPin size={17} /></span>
+          <div>
+            <h2 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>Filing details</h2>
+            <p className="text-xs" style={{ color: "var(--text-2)" }}>Country, tax type and period drive your checklist</p>
+          </div>
+          {verified
+            ? <span className="ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold" style={{ background: "#DCFCE7", color: "#166534" }}><ShieldCheck size={12} /> Verified</span>
+            : <span className="ml-auto inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold" style={{ background: "#FEF3C7", color: "#92400E" }}><ShieldCheck size={12} /> Standard international checklist</span>}
+        </div>
+        <div className="grid gap-4 overflow-visible md:grid-cols-3">
+          <div className="text-sm font-semibold" style={{ color: "var(--text)" }}><span className="inline-flex items-center gap-1.5 text-[13px]"><MapPin size={13} style={{ color: VAULT_BLUE }} /> Country *</span>
             <CountryDropdown
               jurisdictions={jurisdictions}
               isLoading={jLoading}
@@ -907,7 +986,7 @@ export function ClientDocumentsView() {
               onChange={handleCountryChange}
             />
           </div>
-          <div className="text-sm font-medium">Tax type *
+          <div className="text-sm font-semibold" style={{ color: "var(--text)" }}><span className="inline-flex items-center gap-1.5 text-[13px]"><FileCheck2 size={13} style={{ color: VAULT_BLUE }} /> Tax type *</span>
             <TaxTypeDropdown
               key={countryId ?? "no-country"}
               countryId={countryId}
@@ -923,55 +1002,60 @@ export function ClientDocumentsView() {
               <p className="mt-1 text-[11px] font-normal" style={{ color: "var(--text-2)" }}>No tax types configured for this country yet.</p>
             )}
           </div>
-          <label className="text-sm font-medium">Filing period *
+          <label className="text-sm font-semibold" style={{ color: "var(--text)" }}><span className="inline-flex items-center gap-1.5 text-[13px]"><CalendarDays size={13} style={{ color: VAULT_BLUE }} /> Filing period *</span>
             <input value={period} onChange={(e) => setPeriod(e.target.value)}
               placeholder={jtt?.filing_frequency === "monthly" ? "e.g. 2026-09" : jtt?.filing_frequency === "quarterly" ? "e.g. 2026-Q3" : jtt?.filing_frequency === "annual" ? "e.g. 2026" : "e.g. 2026-Q3"}
-              className="mt-1 w-full rounded-[10px] border px-3 py-2.5 text-sm font-normal" style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
+              className={inputCls} style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
           </label>
-          <label className="text-sm font-medium">Business / reference name
+          <label className="text-sm font-semibold" style={{ color: "var(--text)" }}><span className="inline-flex items-center gap-1.5 text-[13px]"><Building2 size={13} style={{ color: VAULT_BLUE }} /> Business / reference name</span>
             <input defaultValue={myClient?.business_name ?? myClient?.name ?? ""} placeholder="Prefilled from your profile"
-              className="mt-1 w-full rounded-[10px] border px-3 py-2.5 text-sm font-normal" style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
+              className={inputCls} style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
           </label>
-          <label className="text-sm font-medium">Tax ID / registration number{country || selectedTaxLabel ? ` — ${country ? country.name : ""}${country && selectedTaxLabel ? " · " : ""}${selectedTaxLabel}` : ""}
+          <label className="text-sm font-semibold" style={{ color: "var(--text)" }}><span className="inline-flex items-center gap-1.5 text-[13px]"><Hash size={13} style={{ color: VAULT_BLUE }} /> Tax ID{country || selectedTaxLabel ? <span className="font-normal" style={{ color: "var(--text-2)" }}> — {country ? country.name : ""}{country && selectedTaxLabel ? " · " : ""}{selectedTaxLabel}</span> : ""}</span>
             <input defaultValue={myClient?.tax_id ?? ""} key={`${countryId ?? "no-country"}-${taxTypeId ?? "no-tax"}`}
               placeholder={country ? `e.g. ${country.name} registration number` : "e.g. as on your registration"}
               pattern="[A-Za-z0-9-]{4,}" title={country && taxTypeId ? `Tax ID for ${country.name}${selectedTaxLabel ? ` (${selectedTaxLabel})` : ""}: at least 4 letters, digits or dashes` : "At least 4 letters, digits or dashes (light check only)"}
-              className="mt-1 w-full rounded-[10px] border px-3 py-2.5 text-sm font-normal" style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
+              className={inputCls} style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
           </label>
-          <label className="text-sm font-medium">Notes (optional)
+          <label className="text-sm font-semibold" style={{ color: "var(--text)" }}><span className="inline-flex items-center gap-1.5 text-[13px]"><StickyNote size={13} style={{ color: VAULT_BLUE }} /> Notes <span className="font-normal" style={{ color: "var(--text-2)" }}>(optional)</span></span>
             <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Anything your accountant should know"
-              className="mt-1 w-full rounded-[10px] border px-3 py-2.5 text-sm font-normal" style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
+              className={inputCls} style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
           </label>
         </div>
       </Card>
 
-      {/* 3. Tax details strip */}
+      {/* 3. Tax context strip */}
       {countryId && taxTypeId && (
-        <Card>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-semibold">{jtt?.local_name ?? taxTypes.find((t) => t.id === taxTypeId)?.name ?? "Tax filing"}</span>
-            {jtt?.local_form_code && <Badge tone="accent">Form {jtt.local_form_code}</Badge>}
-            {jtt?.filing_frequency && <Badge tone="neutral">{jtt.filing_frequency.replace(/_/g, " ")}</Badge>}
-            {verified ? <Badge tone="success">Verified</Badge>
-              : <Badge tone="warning">Standard international checklist, not country-verified</Badge>}
-            {jtt?.source_url && <a href={jtt.source_url} target="_blank" rel="noreferrer" className="ml-auto text-xs font-bold text-[#2563EB] hover:underline">Official source ↗</a>}
-          </div>
-        </Card>
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border px-4 py-3 text-sm" style={{ borderColor: "var(--row-border)", background: "var(--row-bg)" }}>
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "var(--accent-tint)", color: VAULT_BLUE }}><FileCheck2 size={15} /></span>
+          <span className="font-bold" style={{ color: "var(--text)" }}>{jtt?.local_name ?? taxTypes.find((t) => t.id === taxTypeId)?.name ?? "Tax filing"}</span>
+          {jtt?.local_form_code && <Badge tone="accent">Form {jtt.local_form_code}</Badge>}
+          {jtt?.filing_frequency && <Badge tone="neutral">{jtt.filing_frequency.replace(/_/g, " ")}</Badge>}
+          {verified ? <Badge tone="success">Verified</Badge>
+            : <Badge tone="warning">Standard international checklist, not country-verified</Badge>}
+          {jtt?.source_url && <a href={jtt.source_url} target="_blank" rel="noreferrer" className="ml-auto text-xs font-bold hover:underline" style={{ color: VAULT_BLUE }}>Official source ↗</a>}
+        </div>
       )}
 
       {/* 4. Required checklist */}
       <Card>
-        <div className="mb-2 flex items-center gap-3">
-          <h2 className="font-semibold">Required documents</h2>
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "var(--accent-tint)", color: VAULT_BLUE }}><CheckCircle2 size={17} /></span>
+          <div>
+            <h2 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>Required documents</h2>
+            <p className="text-xs" style={{ color: "var(--text-2)" }}>
+              {progress.required > 0 ? `${progress.received} of ${progress.required} required received` : "Your accountant's checklist"}
+            </p>
+          </div>
           {progress.required > 0 && (
-            <span className="ml-auto text-xs font-semibold" style={{ color: "var(--text-2)" }}>
-              {progress.received} of {progress.required} required received
+            <span className="tnum ml-auto rounded-full px-3 py-1 text-xs font-bold" style={{ background: "var(--accent-tint)", color: VAULT_BLUE }}>
+              {Math.round((progress.received / progress.required) * 100)}% complete
             </span>
           )}
         </div>
         {progress.required > 0 && (
-          <div className="mb-3 h-2 overflow-hidden rounded-full" style={{ background: "color-mix(in srgb, var(--text-2) 20%, transparent)" }}>
-            <div className="h-full rounded-full" style={{ width: `${Math.round((progress.received / progress.required) * 100)}%`, background: "#2563EB" }} />
+          <div className="mb-4 h-2 overflow-hidden rounded-full" style={{ background: "var(--hero-track)" }}>
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.round((progress.received / progress.required) * 100)}%`, background: "linear-gradient(90deg,#2563EB,#38BDF8)" }} />
           </div>
         )}
         {rLoading ? <div className="space-y-2">{[1, 2, 3].map((i) => <div key={i} className="skeleton h-14" />)}</div>
@@ -988,19 +1072,26 @@ export function ClientDocumentsView() {
                       const st = statusOf(r.id) ?? "pending";
                       const item = (checklist as ChecklistItem[]).find((c) => c.document_requirement_id === r.id);
                       return (
-                        <div key={r.id} className="flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2.5 text-sm" style={{ borderColor: "var(--border)" }}>
+                        <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3.5 text-sm transition-all hover:shadow-md" style={{ borderColor: "var(--row-border)", background: "var(--row-bg)" }}>
+                          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: st === "received" ? "#DCFCE7" : st === "rejected" ? "#FEE2E2" : "var(--accent-tint)", color: statusDot(st) }}>
+                            {st === "received" ? <CheckCircle2 size={18} /> : st === "rejected" ? <Clock3 size={18} /> : <FileText size={18} />}
+                          </span>
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold">{r.name} {r.is_mandatory === false && <Badge tone="neutral">Optional</Badge>}{r.is_mandatory !== false && <Badge tone="accent">Mandatory</Badge>}</p>
+                            <p className="flex flex-wrap items-center gap-1.5 font-bold" style={{ color: "var(--text)" }}>{r.name} {r.is_mandatory === false && <Badge tone="neutral">Optional</Badge>}{r.is_mandatory !== false && <span className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide" style={{ background: "#FEF3C7", color: "#92400E" }}>Mandatory</span>}</p>
                             {r.description && <p className="text-xs" style={{ color: "var(--text-2)" }}>{r.description}</p>}
                             {st === "rejected" && item?.rejection_reason && (
                               <p className="mt-1 text-xs font-medium" style={{ color: "#DC2626" }}>Needs re-upload: {item.rejection_reason}</p>
                             )}
                           </div>
-                          <Badge tone={CHECKLIST_STATUS_TONE[st] ?? "neutral"}>{statusLabel(st)}</Badge>
-                          <button disabled={!ready || busy !== null} onClick={() => itemFileRef.current[r.id]?.click()}
-                            className="btn-ghost px-3 py-1.5 text-xs disabled:opacity-40">
-                            {st === "rejected" ? "Re-upload" : st === "pending" ? "Upload" : "Replace"}
-                          </button>
+                          <span className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: `${statusDot(st)}14`, color: statusDot(st) }}>
+                              <span className="h-1.5 w-1.5 rounded-full" style={{ background: statusDot(st) }} />{statusLabel(st)}
+                            </span>
+                            <button disabled={!ready || busy !== null} onClick={() => itemFileRef.current[r.id]?.click()}
+                              className="inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-xs font-bold text-white transition-transform hover:-translate-y-0.5 disabled:opacity-40" style={{ background: VAULT_BLUE }}>
+                              <Upload size={13} />{st === "rejected" ? "Re-upload" : st === "pending" ? "Upload" : "Replace"}
+                            </button>
+                          </span>
                           <input ref={(el) => { itemFileRef.current[r.id] = el; }} type="file" accept={ACCEPT} className="hidden"
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f, r.id); e.target.value = ""; }} />
                         </div>
@@ -1018,11 +1109,14 @@ export function ClientDocumentsView() {
         {successMsg && <p className="mt-2 text-xs font-medium" style={{ color: "#16A34A" }}>{successMsg}</p>}
       </Card>
 
-      {/* 5. Dropzone area (Drag & drop visual removed by request, staging UI kept for the top upload button) */}
+      {/* 5. Staged uploads */}
       <div>
         {staged.length > 0 && (
-          <Card className="mt-3">
-            <p className="eyebrow mb-2">Ready to upload ({staged.length})</p>
+          <Card className="mt-3" hover>
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "var(--accent-tint)", color: VAULT_BLUE }}><CloudUpload size={17} /></span>
+              <p className="text-[15px] font-bold" style={{ color: "var(--text)" }}>Ready to upload ({staged.length})</p>
+            </div>
             <div className="space-y-2">
               {staged.map((s, i) => (
                 <div key={`${s.file.name}-${i}`} className="flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-sm" style={{ borderColor: "var(--border)" }}>
@@ -1047,17 +1141,24 @@ export function ClientDocumentsView() {
 
       {/* 6. My documents */}
       <Card>
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <h2 className="font-semibold">My documents</h2>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search files…"
-            className="ml-auto rounded-[10px] border px-3 py-1.5 text-xs outline-none" style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "var(--accent-tint)", color: VAULT_BLUE }}><FolderOpen size={17} /></span>
+          <div>
+            <h2 className="text-[15px] font-bold" style={{ color: "var(--text)" }}>My documents</h2>
+            <p className="text-xs" style={{ color: "var(--text-2)" }}>{myDocs.length} files · {selected.length} selected</p>
+          </div>
+          <div className="relative ml-auto">
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-2)" }} />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search files…"
+              className="rounded-xl border py-2 pl-9 pr-3 text-xs outline-none transition-all focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15" style={{ borderColor: "var(--border)", background: "var(--bg)", minWidth: 200 }} />
+          </div>
         </div>
-        <div className="mb-3 flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           {["all", "pending", "uploaded", "received", "rejected"].map((c) => (
-            <button key={c} onClick={() => setStatusChip(c)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${statusChip === c ? "text-white" : ""}`}
-              style={statusChip === c ? { background: "#2563EB" } : { border: "1px solid var(--border)" }}>{c}</button>
+            <button key={c} onClick={() => setStatusChip(c)} className="rounded-full px-3.5 py-1.5 text-xs font-bold capitalize transition-all"
+              style={statusChip === c ? { background: VAULT_BLUE, color: "#fff", boxShadow: "0 4px 12px rgba(37,99,235,.3)" } : { border: "1px solid var(--border)", color: "var(--text-2)" }}>{c}</button>
           ))}
-          <Button variant="ghost" className="ml-auto px-3 py-1.5 text-xs" onClick={bulkZip}><Download size={13} /> ZIP{selected.length > 0 ? ` (${selected.length})` : ""}</Button>
+          <button className="ml-auto inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-bold transition-colors hover:bg-slate-50" style={{ borderColor: "var(--border)" }} onClick={bulkZip}><Download size={13} /> ZIP{selected.length > 0 ? ` (${selected.length})` : ""}</button>
         </div>
         {successMsg && (
           <p className="rounded-xl px-4 py-2 text-xs font-semibold" style={{ background: "var(--success-bg)", color: "var(--success-tx)" }}>{successMsg}</p>
@@ -1083,43 +1184,50 @@ export function ClientDocumentsView() {
                   const docError = replaceErrors[d.id];
                   const histOpen = historyOpen[d.id] ?? false;
                   return (
-                    <div key={d.id} className="rounded-xl border px-3 py-2 text-sm" style={{ borderColor: "var(--border)" }}>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <input type="checkbox" checked={selected.includes(d.id)} onChange={() => setSelected((p) => p.includes(d.id) ? p.filter((x) => x !== d.id) : [...p, d.id])} aria-label={`Select ${d.file_name}`} />
-                        <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{d.file_name}</span>
-                          <span className="block text-xs" style={{ color: "var(--text-2)" }}>
+                    <div key={d.id} className="rounded-2xl border px-4 py-3 text-sm transition-all hover:shadow-md" style={{ borderColor: "var(--row-border)", background: "var(--row-bg)" }}>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <input type="checkbox" className="h-4 w-4 accent-[#2563EB]" checked={selected.includes(d.id)} onChange={() => setSelected((p) => p.includes(d.id) ? p.filter((x) => x !== d.id) : [...p, d.id])} aria-label={`Select ${d.file_name}`} />
+                        {fileIcon(d.file_name)}
+                        <span className="min-w-0 flex-1"><span className="block truncate font-bold" style={{ color: "var(--text)" }}>{d.file_name}</span>
+                          <span className="mt-0.5 block text-xs" style={{ color: "var(--text-2)" }}>
                             v{vNo} · {(d.created_at ?? "").slice(0, 10)}{vNo > 1 ? " · Re-uploaded" : ""}
                           </span></span>
-                        <Badge tone={CHECKLIST_STATUS_TONE[st] ?? "neutral"}>{statusLabel(st)}</Badge>
+                        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: `${statusDot(st)}14`, color: statusDot(st) }}>
+                          <span className="h-1.5 w-1.5 rounded-full" style={{ background: statusDot(st) }} />{statusLabel(st)}
+                        </span>
                         {vNo > 1 && <Badge tone="accent">Re-uploaded</Badge>}
+                        <span className="flex flex-wrap items-center gap-1.5">
                         <button onClick={() => viewDocument(d)} disabled={viewingId === d.id}
-                          className="btn-ghost px-2 py-1 text-xs disabled:opacity-50" title="View latest document">
-                          <Eye size={12} className="mr-1 inline" />{viewingId === d.id ? "Opening…" : "View"}
+                          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-slate-50 disabled:opacity-50" style={{ borderColor: "var(--border)" }} title="View latest document">
+                          <Eye size={12} />{viewingId === d.id ? "Opening…" : "View"}
                         </button>
-                        <button onClick={() => openEdit(d)} className="btn-ghost px-2 py-1 text-xs" title="Edit name, period and notes">
-                          <Pencil size={12} className="mr-1 inline" />Edit
+                        <button onClick={() => openEdit(d)} className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-slate-50" style={{ borderColor: "var(--border)" }} title="Edit name, period and notes">
+                          <Pencil size={12} />Edit
                         </button>
                         {locked ? (
-                          <button className="btn-ghost cursor-not-allowed px-2 py-1 text-xs opacity-50"
+                          <button className="inline-flex cursor-not-allowed items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold opacity-50"
+                            style={{ borderColor: "var(--border)" }}
                             title={locked} onClick={() => setReplaceErrors((p) => ({ ...p, [d.id]: locked }))}>
-                            <Replace size={12} className="mr-1 inline" />Replace
+                            <Replace size={12} />Replace
                           </button>
                         ) : (
-                          <button className="btn-ghost px-2 py-1 text-xs" title="Replace with a new file (keeps history)"
+                          <button className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-slate-50"
+                            style={{ borderColor: "var(--border)" }} title="Replace with a new file (keeps history)"
                             disabled={isReplacing}
                             onClick={() => { setReplaceTarget(d); replaceFileRef.current?.click(); }}>
-                            <Replace size={12} className="mr-1 inline" />{isReplacing ? `Uploading ${replaceProgress}…` : "Replace"}
+                            <Replace size={12} />{isReplacing ? `Uploading…` : "Replace"}
                           </button>
                         )}
                         <button onClick={() => setHistoryOpen((p) => ({ ...p, [d.id]: !histOpen }))}
-                          className="btn-ghost px-2 py-1 text-xs" title="View version history" aria-expanded={histOpen}>
-                          <History size={12} className="mr-1 inline" />History
+                          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-slate-50" style={{ borderColor: "var(--border)" }} title="View version history" aria-expanded={histOpen}>
+                          <History size={12} />History
                         </button>
                         {st !== "received" && !locked && (
-                          <button className="rounded-lg px-2 py-1 text-xs font-bold text-[#DC2626]" title="Delete while still pending" onClick={() => removeDoc(d.id, st)}>
-                            <Trash2 size={12} className="mr-1 inline" />Delete
+                          <button className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-red-50" style={{ color: "#DC2626" }} title="Delete while still pending" onClick={() => removeDoc(d.id, st)}>
+                            <Trash2 size={12} />Delete
                           </button>
                         )}
+                        </span>
                       </div>
                       {isReplacing && (
                         <p className="mt-1.5 text-xs font-medium" style={{ color: "var(--text-2)" }}>

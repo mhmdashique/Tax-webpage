@@ -1,17 +1,17 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, EmptyState, StatusBadge, Badge, Button, Modal, DataTable } from "./ui";
-import { useClients, useFilings, useTasks, usePayments, useDocuments, useJurisdictions, useUsers, useReviewItems, useStaffInbox, useDocumentVersions } from "@/lib/hooks";
+import { useClients, useFilings, useTasks, usePayments, useDocuments, useJurisdictions, useUsers, useReviewItems, useStaffInbox, useDocumentVersions, useMessages, useCurrentUser } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
 import { dueLabel, toCSV, downloadFile, exportPDF, formatMoney } from "@/lib/data";
-import { FILING_STAGES, normalizeStage, displayStatus, nextStage, canAdvance, stageLabel, isOverdue } from "@/lib/lifecycle";
-import { Users, FileText, FolderOpen, CreditCard, Plus, Trash2, Send, Download, Eye, Check, X, History } from "lucide-react";
+import { FILING_STAGES, normalizeStage, displayStatus, nextStage, canAdvance, stageLabel, stageIndex, isOverdue } from "@/lib/lifecycle";
+import { Users, FileText, FolderOpen, CreditCard, Plus, Trash2, Send, Download, Eye, Check, X, History, Calendar, CalendarClock, Wallet, ReceiptText, Search, CheckCheck, ShieldCheck, Inbox } from "lucide-react";
 import { ClientDocumentsView } from "./smart-documents-client";
 import { GstPaymentsPanel, useGstPayments } from "./gst-payments";
 import { AddTaskButton, TaskCenter } from "./task-center";
 import { SearchSelect } from "./search-select";
 import { clientProgress } from "./task-center";
-import type { Client, Filing, DocRow, ChecklistItem, Task } from "@/types/database";
+import type { Client, Filing, DocRow, ChecklistItem, Task, Message } from "@/types/database";
 
 /** Tasks tab inside the client profile modal. */
 function ClientProfileTasks({ tasks }: { tasks: Task[] }) {
@@ -412,65 +412,122 @@ export function FilingsView({ role }: { role: "admin" | "employee" | "client" })
       </Modal>
 
       <Modal open={!!selectedFiling} onClose={() => { setSelectedFiling(null); setFilingModalTab("details"); }} title="Filing overview" size="xl">
-        {selectedFiling && (
+        {selectedFiling && (() => {
+          const stageIdx = Math.max(0, stageIndex(String(selectedFiling.status)));
+          const totalStages = FILING_STAGES.length;
+          const progress = Math.round(((stageIdx + 1) / totalStages) * 100);
+          const overdue = isOverdue(String(selectedFiling.status), selectedFiling.due_date);
+          const filingClient = clients.find((client) => client.id === selectedFiling.client_id);
+          const clientName = filingClient?.business_name ?? filingClient?.name ?? null;
+          const stats = [
+            { icon: Calendar, label: "Filing period", value: selectedFiling.period || "—", sub: selectedFiling.tax_type },
+            { icon: CalendarClock, label: "Return due date", value: selectedFiling.due_date || "—", sub: selectedFiling.due_date ? dueLabel(selectedFiling.due_date) : null, alert: overdue },
+            { icon: Wallet, label: "Amount owed", value: formatMoney(Number(selectedFiling.amount_owed ?? 0)), sub: Number(selectedFiling.amount_refund ?? 0) > 0 ? `Refund ${formatMoney(Number(selectedFiling.amount_refund))}` : "Net payable", strong: true },
+            { icon: ReceiptText, label: "Filed on", value: selectedFiling.filed_at ? selectedFiling.filed_at.slice(0, 10) : "Not filed yet", sub: stageLabel(String(selectedFiling.status), role === "client") },
+          ];
+          return (
           <div className="space-y-5">
-            <div className="flex gap-2 border-b pb-3" style={{ borderColor: "var(--border)" }}>
-              {(["details", "tasks"] as const).map((tab) => <button key={tab} onClick={() => setFilingModalTab(tab)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold capitalize ${filingModalTab === tab ? "text-white" : ""}`}
-                style={filingModalTab === tab ? { background: "#2563EB" } : { background: "var(--bg)", border: "1px solid var(--border)" }}>{tab}</button>)}
+            <div className="inline-flex rounded-full border p-1" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+              {(["details", "tasks"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setFilingModalTab(tab)}
+                  className={`rounded-full px-5 py-1.5 text-sm font-semibold capitalize transition-all ${filingModalTab === tab ? "text-white shadow-sm" : ""}`}
+                  style={filingModalTab === tab ? { background: "#2563EB" } : { color: "var(--text-2)" }}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
             {filingModalTab === "details" ? <>
-            <div className="flex flex-wrap items-center gap-4 rounded-2xl border p-4 sm:p-5" style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl" style={{ background: "var(--accent-tint)", color: "var(--accent)" }}>
-                <FileText size={22} />
+            <div className="overflow-hidden rounded-2xl border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+              <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #2563EB 0%, #60A5FA 100%)" }} />
+              <div className="flex flex-wrap items-center gap-4 p-4 sm:p-5">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm" style={{ background: "linear-gradient(135deg, #2563EB, #60A5FA)" }}>
+                  <FileText size={22} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--text-2)" }}>Tax filing · {selectedFiling.period || "—"}</p>
+                    {overdue && <Badge tone="danger">Overdue</Badge>}
+                  </div>
+                  <h4 className="mt-1 truncate text-xl font-bold tracking-tight">{selectedFiling.tax_type}</h4>
+                  <p className="mt-0.5 truncate text-sm" style={{ color: "var(--text-2)" }}>
+                    {clientName ? `${clientName} · ` : ""}Due {selectedFiling.due_date || "—"}{selectedFiling.due_date ? ` (${dueLabel(selectedFiling.due_date)})` : ""}
+                  </p>
+                </div>
+                <StatusBadge status={stageLabel(String(selectedFiling.status), role === "client")} />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.08em]" style={{ color: "var(--text-2)" }}>Tax filing</p>
-                <h4 className="mt-1 truncate text-lg font-bold">{selectedFiling.tax_type}</h4>
-                <p className="mt-0.5 text-sm" style={{ color: "var(--text-2)" }}>Tax period · {selectedFiling.period}</p>
+              <div className="px-4 pb-4 sm:px-5">
+                <div className="flex items-center justify-between text-xs font-medium" style={{ color: "var(--text-2)" }}>
+                  <span>Step {stageIdx + 1} of {totalStages} · {FILING_STAGES[stageIdx]?.label}</span>
+                  <span className="tnum">{progress}%</span>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full" style={{ background: "color-mix(in srgb, var(--text-2) 15%, transparent)" }}>
+                  <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: overdue ? "#DC2626" : "linear-gradient(90deg, #2563EB, #60A5FA)" }} />
+                </div>
+                <div className="mt-4 flex gap-1 overflow-x-auto pb-1">
+                  {FILING_STAGES.map((stage, i) => {
+                    const done = i < stageIdx;
+                    const current = i === stageIdx;
+                    return (
+                      <div key={stage.key} className="flex min-w-0 flex-1 items-start gap-1.5">
+                        <div className="flex min-w-[64px] flex-col items-center gap-1.5 text-center">
+                          <span
+                            className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold"
+                            style={
+                              done
+                                ? { background: "#16A34A", color: "#fff" }
+                                : current
+                                  ? { background: "#2563EB", color: "#fff", boxShadow: "0 0 0 4px rgba(37,99,235,0.18)" }
+                                  : { background: "color-mix(in srgb, var(--text-2) 15%, transparent)", color: "var(--text-2)" }
+                            }
+                            title={stage.desc}
+                          >
+                            {done ? <Check size={13} strokeWidth={3} /> : i + 1}
+                          </span>
+                          <span className="text-[10px] font-semibold leading-tight" style={{ color: current ? "var(--text)" : "var(--text-2)" }}>
+                            {role === "client" ? stage.clientLabel : stage.label}
+                          </span>
+                        </div>
+                        {i < totalStages - 1 && <div className="mt-3 h-0.5 min-w-2 flex-1 rounded" style={{ background: i < stageIdx ? "#16A34A" : "var(--border)" }} />}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <StatusBadge status={stageLabel(String(selectedFiling.status), role === "client")} />
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)" }}>
-                <p className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Filing period</p>
-                <p className="mt-1 font-semibold">{selectedFiling.period || "—"}</p>
-              </div>
-              <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)" }}>
-                <p className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Return due date</p>
-                <p className="mt-1 font-semibold">{selectedFiling.due_date || "—"}</p>
-              </div>
-              <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)" }}>
-                <p className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Amount owed</p>
-                <p className="tnum mt-1 text-lg font-bold">{formatMoney(Number(selectedFiling.amount_owed ?? 0))}</p>
-              </div>
-              {Number(selectedFiling.amount_refund ?? 0) > 0 && (
-                <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)" }}>
-                  <p className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Expected refund</p>
-                  <p className="tnum mt-1 text-lg font-bold">{formatMoney(Number(selectedFiling.amount_refund))}</p>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {stats.map((s) => (
+                <div key={s.label} className="rounded-2xl border p-4 transition-colors" style={{ borderColor: "var(--border)", background: "var(--surface-elev)" }}>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: s.alert ? "#FEE2E2" : "var(--accent-tint)", color: s.alert ? "#DC2626" : "var(--accent)" }}>
+                      <s.icon size={16} />
+                    </span>
+                    <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-2)" }}>{s.label}</p>
+                  </div>
+                  <p className={`tnum mt-3 truncate ${s.strong ? "text-lg font-bold" : "text-[15px] font-bold"}`}>{s.value}</p>
+                  {s.sub && <p className="mt-1 truncate text-xs" style={{ color: s.alert ? "#DC2626" : "var(--text-2)" }}>{s.sub}</p>}
                 </div>
-              )}
-              {selectedFiling.filed_at && (
-                <div className="rounded-xl border p-4" style={{ borderColor: "var(--border)" }}>
-                  <p className="text-xs font-medium" style={{ color: "var(--text-2)" }}>Filed on</p>
-                  <p className="mt-1 font-semibold">{selectedFiling.filed_at.slice(0, 10)}</p>
-                </div>
-              )}
+              ))}
             </div>
 
             {gstPaymentByFiling.has(selectedFiling.id) && (
-              <div className="border-t pt-5" style={{ borderColor: "var(--border)" }}>
+              <div className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
                 <GstPaymentsPanel role={role} filingId={selectedFiling.id} />
               </div>
             )}
-            <AddTaskButton role={role} filing={selectedFiling} client={clients.find((client) => client.id === selectedFiling.client_id)} label={role === "client" ? "Raise query" : "Add task"} />
-            </> : <FilingTasksPanel role={role} filing={selectedFiling} client={clients.find((client) => client.id === selectedFiling.client_id)} />}
-            <div className="flex justify-end border-t pt-4" style={{ borderColor: "var(--border)" }}>
-              <Button variant="ghost" onClick={() => { setSelectedFiling(null); setFilingModalTab("details"); }}>Done</Button>
+            </> : <FilingTasksPanel role={role} filing={selectedFiling} client={filingClient} />}
+            <div className="flex flex-wrap items-center gap-3 border-t pt-4" style={{ borderColor: "var(--border)" }}>
+              {filingModalTab === "details" && (
+                <AddTaskButton role={role} filing={selectedFiling} client={filingClient} label={role === "client" ? "Raise query" : "Add task"} />
+              )}
+              <Button variant="ghost" className="ml-auto" onClick={() => { setSelectedFiling(null); setFilingModalTab("details"); }}>Done</Button>
             </div>
           </div>
-        )}
+          );
+        })()}
       </Modal>
     </div>
   );
@@ -837,45 +894,391 @@ function StaffDocumentsView({ role }: { role: "admin" | "employee" }) {
   );
 }
 
-// ---------- Messages ----------
-export function MessagesView() {
-  const [threads] = useState([{ id: "1", name: "Apex support", preview: "Your VAT filing is ready for review", unread: 2 }]);
-  const [active, setActive] = useState("1");
-  const [msgs, setMsgs] = useState([{ from: "them", body: "Hi! Your VAT Q3 draft is ready — please review and sign." }, { from: "me", body: "Thanks, reviewing today." }]);
-  const [draft, setDraft] = useState("");
+// ---------- Messages (live Supabase, no mock data) ----------
+const AVATAR_COLORS = ["#2563EB", "#0D9488", "#7C3AED", "#DB2777", "#EA580C", "#16A34A"];
 
-  function send(e: React.FormEvent) {
+function avatarColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+function fmtMsgTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  if (sameDay) return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  if (now.getTime() - d.getTime() < 7 * 86400000) return d.toLocaleDateString([], { weekday: "short" });
+  return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+export function MessagesView({ embedded = false }: { embedded?: boolean }) {
+  const { data: currentUser } = useCurrentUser();
+  const meId = (currentUser?.id ?? null) as string | null;
+  const myRole = String((currentUser as { role?: string } | null)?.role ?? "");
+  const { data: users = [] } = useUsers();
+  const { data: messages = [], mutate, isLoading, error } = useMessages();
+  const [active, setActive] = useState<string | null>(null);
+  const [draft, setDraft] = useState("");
+  const [query, setQuery] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [newUserId, setNewUserId] = useState("");
+
+  const userById = useMemo(() => new Map(users.map((u) => [u.id, u])), [users]);
+
+  const threads = useMemo(() => {
+    const map = new Map<string, { id: string; userId: string | null; threadId: string | null; name: string; role: string; lastBody: string; lastAt: string; unread: number; msgs: Message[] }>();
+    for (const m of messages) {
+      // Counterpart: the participant that isn't me; fall back to thread for group/legacy rows
+      const counterpart = m.sender_id === meId ? m.recipient_id : m.recipient_id === meId ? m.sender_id : (m.sender_id ?? m.recipient_id);
+      // Hide threads with pending/rejected users — only approved people appear in messaging
+      const counterpartUser = counterpart ? userById.get(counterpart) : undefined;
+      if (counterpart && counterpartUser && (counterpartUser.approval_status ?? "approved") !== "approved") continue;
+      const key = counterpart ?? `thread:${m.thread_id ?? m.id}`;
+      const u = counterpartUser;
+      const entry = map.get(key) ?? {
+        id: key,
+        userId: counterpart ?? null,
+        threadId: m.thread_id ?? null,
+        name: u?.name ?? (counterpart ? "Team member" : "Conversation"),
+        role: u?.role ?? "",
+        lastBody: "",
+        lastAt: m.created_at,
+        unread: 0,
+        msgs: [],
+      };
+      entry.msgs.push(m);
+      if (!entry.threadId && m.thread_id) entry.threadId = m.thread_id;
+      if (u && entry.name === "Team member") { entry.name = u.name; entry.role = u.role; }
+      if ((m.created_at ?? "") >= (entry.lastAt ?? "")) { entry.lastAt = m.created_at; entry.lastBody = m.body; }
+      if (m.recipient_id === meId && !m.read_at) entry.unread += 1;
+      map.set(key, entry);
+    }
+    return [...map.values()].sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1));
+  }, [messages, meId, userById]);
+
+  useEffect(() => {
+    if (!active && threads.length > 0) setActive(threads[0].id);
+  }, [threads, active]);
+
+  const current = threads.find((t) => t.id === active) ?? threads[0] ?? null;
+  const msgs = useMemo(() => [...(current?.msgs ?? [])].sort((a, b) => (a.created_at < b.created_at ? -1 : 1)), [current]);
+  const visible = threads.filter((t) =>
+    !query.trim() || t.name.toLowerCase().includes(query.toLowerCase()) || t.lastBody.toLowerCase().includes(query.toLowerCase())
+  );
+  const totalUnread = threads.reduce((s, t) => s + t.unread, 0);
+
+  // People you can start a conversation with: approved firm users only, excluding self.
+  // Pending/rejected employees never appear here (or in the thread list below).
+  const candidates = useMemo(() => {
+    const approved = users.filter((u) => (u.approval_status ?? "approved") === "approved" && u.id !== meId);
+    const inThread = new Set(threads.map((t) => t.userId).filter(Boolean) as string[]);
+    const filtered = myRole === "client" ? approved.filter((u) => u.role !== "client") : approved;
+    // Unthreaded people first so "new" actually creates something
+    return [...filtered].sort((a, b) => Number(inThread.has(a.id)) - Number(inThread.has(b.id)) || a.name.localeCompare(b.name));
+  }, [users, meId, myRole, threads]);
+
+  async function select(id: string) {
+    setActive(id);
+    setSendError("");
+    const thread = threads.find((t) => t.id === id);
+    if (!thread || !meId) return;
+    const unreadIds = thread.msgs.filter((m) => m.recipient_id === meId && !m.read_at).map((m) => m.id);
+    if (unreadIds.length === 0) return;
+    const sb = createClient();
+    if (!sb) return;
+    await sb.from("messages").update({ read_at: new Date().toISOString() }).in("id", unreadIds);
+    await mutate();
+  }
+
+  async function send(e: React.FormEvent) {
     e.preventDefault();
-    if (!draft.trim()) return;
-    setMsgs([...msgs, { from: "me", body: draft }]);
+    const body = draft.trim();
+    if (!body || !meId || !current?.userId) return;
+    setSending(true);
+    setSendError("");
+    try {
+      const sb = createClient();
+      if (!sb) throw new Error("Connect Supabase to send messages.");
+      const { data: me } = await sb.from("users").select("firm_id").eq("id", meId).maybeSingle();
+      const firmId = (me as { firm_id?: string } | null)?.firm_id ?? messages.find((m) => m.firm_id)?.firm_id ?? null;
+      if (!firmId) throw new Error("Your firm record is missing — ask an admin to link your user.");
+      const threadId = current.threadId ?? (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}`);
+      const { error: insertError } = await sb.from("messages").insert([{
+        firm_id: firmId,
+        thread_id: threadId,
+        sender_id: meId,
+        recipient_id: current.userId,
+        body,
+      }]);
+      if (insertError) throw insertError;
+      setDraft("");
+      await mutate();
+    } catch (caught) {
+      setSendError(caught instanceof Error ? caught.message : "Could not send message.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function startNew() {
+    if (!newUserId) return;
+    const existing = threads.find((t) => t.userId === newUserId);
+    if (existing) setActive(existing.id);
+    else {
+      // Optimistic thread shell — first send() persists it with a fresh thread_id
+      setActive(newUserId);
+    }
+    setShowNew(false);
+    setNewUserId("");
     setDraft("");
   }
 
+  // Active thread may be a just-picked user with no messages yet
+  const pendingUser = active && !current ? userById.get(active) : undefined;
+  const chatName = current?.name ?? pendingUser?.name ?? "Conversation";
+  const chatRole = current?.role ?? pendingUser?.role ?? "";
+  const chatColor = avatarColor(current?.userId ?? active ?? "x");
+  const pendingThreadId: string | null = null;
+  const canSend = Boolean(meId && (current?.userId ?? pendingUser?.id));
+  const composerTargetId = current?.userId ?? pendingUser?.id ?? null;
+
+  async function sendPending(e: React.FormEvent) {
+    e.preventDefault();
+    const body = draft.trim();
+    if (!body || !meId || !composerTargetId) return;
+    setSending(true);
+    setSendError("");
+    try {
+      const sb = createClient();
+      if (!sb) throw new Error("Connect Supabase to send messages.");
+      const { data: me } = await sb.from("users").select("firm_id").eq("id", meId).maybeSingle();
+      const firmId = (me as { firm_id?: string } | null)?.firm_id ?? messages.find((m) => m.firm_id)?.firm_id ?? null;
+      if (!firmId) throw new Error("Your firm record is missing — ask an admin to link your user.");
+      const threadId = current?.threadId ?? pendingThreadId ?? (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}`);
+      const { error: insertError } = await sb.from("messages").insert([{
+        firm_id: firmId,
+        thread_id: threadId,
+        sender_id: meId,
+        recipient_id: composerTargetId,
+        body,
+      }]);
+      if (insertError) throw insertError;
+      setDraft("");
+      await mutate();
+    } catch (caught) {
+      setSendError(caught instanceof Error ? caught.message : "Could not send message.");
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Messages</h1>
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="p-2">
-          {threads.map((t) => (
-            <button key={t.id} onClick={() => setActive(t.id)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left ${active === t.id ? "text-white" : ""}`} style={active === t.id ? { background: "#2563EB" } : undefined}>
-              <span className="flex h-9 w-9 items-center justify-center rounded-full font-bold" style={{ background: active === t.id ? "rgba(255,255,255,.25)" : "var(--accent-tint)", color: active === t.id ? "#fff" : "var(--accent)" }}>{t.name[0]}</span>
-              <span><span className="block text-sm font-semibold">{t.name}</span><span className="block text-xs opacity-70">{t.preview}</span></span>
-              {t.unread > 0 && <Badge tone={active === t.id ? "neutral" : "accent"}>{t.unread}</Badge>}
-            </button>
-          ))}
-        </Card>
-        <Card className="flex min-h-[400px] flex-col md:col-span-2">
-          <div className="flex-1 space-y-2">
-            {msgs.map((m, i) => (
-              <div key={i} className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${m.from === "me" ? "ml-auto text-white" : ""}`} style={m.from === "me" ? { background: "#2563EB" } : { background: "var(--bg)", border: "1px solid var(--border)" }}>{m.body}</div>
-            ))}
+    <div className={embedded ? "" : "space-y-4"}>
+      {!embedded && (
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <p className="eyebrow">Inbox</p>
+            <h1 className="prem-title">Messages</h1>
+            <p className="mt-1 text-sm" style={{ color: "var(--text-2)" }}>
+              A direct line to your accountant — replies land here, not in email threads.
+            </p>
           </div>
-          <form onSubmit={send} className="mt-4 flex gap-2">
-            <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Write a message…" className="flex-1 rounded-[10px] border px-3 py-2.5 text-sm outline-none" style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
-            <Button><Send size={15} /> Send</Button>
+          <div className="ml-auto flex items-center gap-2">
+            {totalUnread > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold" style={{ background: "var(--accent-tint)", color: "var(--accent)" }}>
+                <Inbox size={13} /> {totalUnread} unread
+              </span>
+            )}
+            <Button className="!py-2 text-xs" onClick={() => setShowNew(true)}>New message</Button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
+        {/* Thread list */}
+        <Card className="!p-3">
+          <div className="mb-2 flex gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-2)" }} />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search conversations…"
+                aria-label="Search conversations"
+                className="w-full rounded-xl border py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
+                style={{ borderColor: "var(--border)", background: "var(--bg)" }}
+              />
+            </div>
+            <button onClick={() => { mutate(); }} className="btn-ghost shrink-0 px-2.5" aria-label="Refresh conversations" title="Refresh">↻</button>
+          </div>
+          {embedded && (
+            <button onClick={() => setShowNew(true)} className="mb-2 w-full rounded-xl border border-dashed px-3 py-2.5 text-sm font-bold text-[#2563EB]" style={{ borderColor: "var(--border)" }}>
+              + New message
+            </button>
+          )}
+          <div className="max-h-[520px] space-y-1 overflow-y-auto" role="tablist" aria-label="Conversations">
+            {isLoading && <div className="space-y-2 p-1"><div className="skeleton h-16" /><div className="skeleton h-16" /></div>}
+            {error && <p role="alert" className="px-3 py-6 text-center text-sm text-[#DC2626]">Could not load messages: {(error as Error).message} <button className="font-bold underline" onClick={() => mutate()}>Retry</button></p>}
+            {!isLoading && !error && threads.length === 0 && (
+              <div className="px-3 py-8 text-center">
+                <p className="text-sm font-semibold">No conversations yet</p>
+                <p className="mt-1 text-xs" style={{ color: "var(--text-2)" }}>Start one with your {myRole === "client" ? "accountant" : "team or client"}.</p>
+                <Button className="mt-3 !py-2 text-xs" onClick={() => setShowNew(true)}>Start conversation</Button>
+              </div>
+            )}
+            {!isLoading && !error && threads.length > 0 && visible.length === 0 && (
+              <p className="px-3 py-8 text-center text-sm" style={{ color: "var(--text-2)" }}>No conversations match “{query}”.</p>
+            )}
+            {visible.map((t) => {
+              const isActive = (current?.id ?? active) === t.id;
+              return (
+                <button
+                  key={t.id}
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => select(t.id)}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors"
+                  style={isActive ? { background: "var(--accent-tint)", boxShadow: "inset 0 0 0 1px var(--accent)" } : undefined}
+                  onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "var(--bg)"; }}
+                  onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <span className="relative shrink-0">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: avatarColor(t.userId ?? t.id) }}>
+                      {(t.name?.[0] ?? "?").toUpperCase()}
+                    </span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-2">
+                      <span className="truncate text-sm font-bold">{t.name}</span>
+                      <span className="ml-auto shrink-0 text-[11px] font-medium" style={{ color: "var(--text-2)" }}>{fmtMsgTime(t.lastAt)}</span>
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs" style={{ color: "var(--text-2)" }}>{t.lastBody || "No messages yet"}</span>
+                    {t.role && <span className="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold capitalize" style={{ background: "var(--bg)", color: "var(--text-2)", border: "1px solid var(--border)" }}>{t.role}</span>}
+                  </span>
+                  {t.unread > 0 && (
+                    <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white" style={{ background: "#2563EB" }}>
+                      {t.unread}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Chat panel */}
+        <Card className="flex min-h-[540px] flex-col !p-0">
+          {!current && !pendingUser ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 p-10 text-center">
+              <p className="font-semibold">Select a conversation</p>
+              <p className="text-sm" style={{ color: "var(--text-2)" }}>Or start a new one — messages are stored in Supabase and visible to both participants.</p>
+              <Button className="mt-2" onClick={() => setShowNew(true)}>New message</Button>
+            </div>
+          ) : (<>
+          <div className="flex items-center gap-3 border-b px-5 py-4" style={{ borderColor: "var(--border)" }}>
+            <span className="relative shrink-0">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: chatColor }}>
+                {(chatName?.[0] ?? "?").toUpperCase()}
+              </span>
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-1.5 text-sm font-bold">
+                <span className="truncate">{chatName}</span>
+                <ShieldCheck size={14} style={{ color: "var(--accent)" }} />
+              </p>
+              <p className="text-xs capitalize" style={{ color: "var(--text-2)" }}>
+                {chatRole ? `${chatRole} · ` : ""}replies notify both sides
+              </p>
+            </div>
+            {chatRole && (
+              <span className="hidden rounded-full px-2.5 py-1 text-[11px] font-bold capitalize sm:inline-block" style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text-2)" }}>
+                {chatRole}
+              </span>
+            )}
+            <button className="btn-ghost p-2" aria-label="Refresh messages" title="Refresh" onClick={() => mutate()}><History size={15} /></button>
+          </div>
+
+          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+            {msgs.length === 0 && (
+              <p className="rounded-xl p-6 text-center text-sm" style={{ background: "var(--bg)", color: "var(--text-2)" }}>
+                No messages yet — say hello to start the thread. It saves to the shared inbox on send.
+              </p>
+            )}
+            {msgs.map((m) => {
+              const mine = meId != null && m.sender_id === meId;
+              return (
+              <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[78%] sm:max-w-[65%]`}>
+                  {!mine && (
+                    <p className="mb-1 text-[11px] font-semibold" style={{ color: "var(--text-2)" }}>{userById.get(m.sender_id ?? "")?.name ?? "Them"}</p>
+                  )}
+                  <div
+                    className={`px-4 py-2.5 text-sm leading-relaxed ${mine ? "rounded-2xl rounded-br-md text-white" : "rounded-2xl rounded-bl-md border"}`}
+                    style={mine ? { background: "#2563EB" } : { background: "var(--bg)", borderColor: "var(--border)" }}
+                  >
+                    {m.body}
+                  </div>
+                  <p className={`mt-1 flex items-center gap-1 text-[11px] ${mine ? "justify-end" : ""}`} style={{ color: "var(--text-2)" }}>
+                    {fmtMsgTime(m.created_at)}{mine && <CheckCheck size={12} style={{ color: m.read_at ? "#16A34A" : "#2563EB" }} />}
+                  </p>
+                </div>
+              </div>
+              );
+            })}
+          </div>
+
+          <form onSubmit={current ? send : sendPending} className="border-t px-4 py-3.5" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+            <div className="flex items-center gap-2">
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder={canSend ? `Message ${chatName}…  (Enter to send)` : "Sign in to send messages"}
+                aria-label="Write a message"
+                disabled={!canSend || sending}
+                className="min-w-0 flex-1 rounded-xl border px-4 py-2.5 text-sm outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 disabled:opacity-50"
+                style={{ borderColor: "var(--border)", background: "var(--bg)" }}
+              />
+              <Button className="!rounded-xl px-5" disabled={!draft.trim() || !canSend || sending}>
+                <Send size={15} /> <span className="hidden sm:inline">{sending ? "Sending…" : "Send"}</span>
+              </Button>
+            </div>
+            {sendError && <p role="alert" className="mt-1.5 px-1 text-xs font-medium text-[#DC2626]">✕ {sendError}</p>}
+            <p className="mt-1.5 px-1 text-[11px]" style={{ color: "var(--text-2)" }}>
+              Stored in Supabase — both participants see it here. Attachments can also be added via Documents.
+            </p>
           </form>
+          </>)}
         </Card>
       </div>
+
+      <Modal open={showNew} onClose={() => setShowNew(false)} title="New message">
+        <div className="space-y-3">
+          <p className="text-sm" style={{ color: "var(--text-2)" }}>
+            {myRole === "client" ? "Message your accountant or firm admin directly." : "Pick a firm member or client to start a thread."}
+          </p>
+          <select
+            value={newUserId}
+            onChange={(e) => setNewUserId(e.target.value)}
+            className="w-full rounded-[10px] border px-3 py-2.5 text-sm"
+            style={{ borderColor: "var(--border)", background: "var(--bg)" }}
+          >
+            <option value="">Choose a person…</option>
+            {candidates.map((u) => <option key={u.id} value={u.id}>{u.name} · {u.role}</option>)}
+          </select>
+          {candidates.length === 0 && <p className="text-xs" style={{ color: "var(--text-2)" }}>No other firm users found yet.</p>}
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setShowNew(false)}>Cancel</Button>
+            <Button disabled={!newUserId} onClick={startNew}>Start</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

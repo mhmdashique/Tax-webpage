@@ -12,5 +12,9 @@ export default async function EmployeeLayout({ children }: { children: React.Rea
   if (approvalStatus !== "approved") redirect("/pending-approval");
   if (role !== "employee") redirect(role ? `/${role}/dashboard` : "/login");
 
-  return <DashboardShell role="employee" name={name}>{children}</DashboardShell>;
+  return (
+    <div className="theme-employee">
+      <DashboardShell role="employee" name={name}>{children}</DashboardShell>
+    </div>
+  );
 }

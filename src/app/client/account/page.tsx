@@ -1,1 +1,1 @@
-﻿"use client"; import { AccountView } from "@/components/portals"; export default function P(){ return <AccountView role="client"/>; }
+﻿"use client"; import { ClientAccountPremium } from "@/components/client-premium"; export default function P(){ return <ClientAccountPremium/>; }
