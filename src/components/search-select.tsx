@@ -220,7 +220,7 @@ export function SearchSelect({
               setOpen(false);
             }, 120);
           }}
-          className="w-full rounded-xl border py-2.5 pl-3 pr-16 text-sm font-normal outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-[#2563EB] disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-xl border py-2.5 pl-3 pr-16 text-sm font-normal outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-60"
           style={{ background: "var(--bg)", borderColor: error || validationMessage ? "#DC2626" : "var(--border)" }}
         />
         <span className="pointer-events-none absolute right-9 top-1/2 -translate-y-1/2" style={{ color: "var(--text-2)" }}>
@@ -302,7 +302,7 @@ export function SearchSelect({
                     onClick={() => commitSelection(o)}
                     title={o.label + (o.sublabel ? ` — ${o.sublabel}` : "")}
                     className={`flex w-full items-start gap-2 px-3 py-2.5 text-left text-sm max-sm:py-3 max-sm:text-base ${o.disabled ? "cursor-not-allowed opacity-50" : ""}`}
-                    style={active ? { background: "var(--accent-tint, rgba(37,99,235,.08))" } : undefined}
+                    style={active ? { background: "var(--accent-tint, color-mix(in srgb, var(--accent) 8%, transparent))" } : undefined}
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium" title={o.label}>{o.label}</span>
@@ -317,7 +317,7 @@ export function SearchSelect({
                         {o.badge}
                       </span>
                     )}
-                    {isSelected && <Check size={15} className="mt-1 shrink-0 text-[#2563EB]" aria-label="Selected" />}
+                    {isSelected && <Check size={15} className="mt-1 shrink-0 text-[var(--accent)]" aria-label="Selected" />}
                   </button>
                 );
               })}

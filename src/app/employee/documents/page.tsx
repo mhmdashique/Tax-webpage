@@ -1,1 +1,1 @@
-﻿"use client"; import { DocumentsView } from "@/components/entities"; export default function P(){ return <DocumentsView role="employee"/>; }
+﻿"use client"; import { EmployeeDocumentsPremium } from "@/components/employee-premium"; export default function P(){ return <EmployeeDocumentsPremium/>; }

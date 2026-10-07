@@ -5,14 +5,19 @@ import { Moon, Sun, X } from "lucide-react";
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
   const { resolved, toggle } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  // Render the light-mode icon on server + first paint so SSR HTML matches
+  // the client; swap to the real icon only after mount (avoids hydration mismatch).
+  const dark = mounted && resolved === "dark";
   return (
     <button
       onClick={toggle}
-      aria-label={resolved === "dark" ? "Switch to light mode" : "Switch to night mode"}
-      title={resolved === "dark" ? "Switch to light mode" : "Switch to night mode"}
+      aria-label={dark ? "Switch to light mode" : "Switch to night mode"}
+      title={dark ? "Switch to light mode" : "Switch to night mode"}
       className={`btn-ghost inline-flex h-9 w-9 items-center justify-center ${className}`}
     >
-      {resolved === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+      {dark ? <Sun size={16} /> : <Moon size={16} />}
     </button>
   );
 }
@@ -39,7 +44,7 @@ export function Card({ children, className = "", hover = false }: { children: Re
       className={`card p-5 ${hover ? "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg" : ""} ${className}`}
       style={hover ? { transition: "all 200ms ease-out" } : undefined}
       onMouseEnter={(e) => {
-        if (hover) (e.currentTarget as HTMLDivElement).style.borderColor = "#2563EB";
+        if (hover) (e.currentTarget as HTMLDivElement).style.borderColor = "var(--accent)";
       }}
       onMouseLeave={(e) => {
         if (hover) (e.currentTarget as HTMLDivElement).style.borderColor = "";
@@ -129,7 +134,7 @@ export function Modal({ open, onClose, title, children, size = "md" }: { open: b
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors hover:text-[#2563EB]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition-colors hover:text-[var(--accent)]"
             style={{ borderColor: "var(--border)", color: "var(--text-2)" }}
             aria-label="Close"
           >
@@ -152,7 +157,7 @@ export function StatCard({ label, value, trend, spark, icon }: { label: string; 
           <p className="eyebrow">{label}</p>
           <p className="tnum mt-2 text-[30px] font-bold leading-none">{value}</p>
           {trend ? (
-            <p className="mt-2 text-xs font-medium" style={{ color: trend.startsWith("-") ? "#DC2626" : "#16A34A" }}>{trend}</p>
+            <p className="mt-2 text-xs font-medium" style={{ color: trend.startsWith("-") ? "#DC2626" : "var(--accent)" }}>{trend}</p>
           ) : null}
         </div>
         {icon ? (
@@ -219,7 +224,7 @@ export function DataTable({ columns, rows, onRowClick, emptyText = "No records y
   );
 }
 
-export function Sparkline({ points, color = "#2563EB" }: { points: number[]; color?: string }) {
+export function Sparkline({ points, color = "var(--accent)" }: { points: number[]; color?: string }) {
   const max = Math.max(...points, 1);
   const min = Math.min(...points, 0);
   const w = 120, h = 40;

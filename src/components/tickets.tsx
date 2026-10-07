@@ -163,7 +163,7 @@ export function CreateTicketForm({ role, onCreated }: { role: Role; onCreated?: 
         <span className="text-xs">Optional · image/PDF · max 5 MB{file ? ` · ${file.name}` : ""}</span>
       </label>
       {msg.err && <p role="alert" className="text-sm text-[#DC2626]">{msg.err}</p>}
-      {msg.ok && <p role="status" className="text-sm font-semibold text-[#15803D]">{msg.ok}</p>}
+      {msg.ok && <p role="status" className="text-sm font-semibold" style={{ color: "var(--accent-hover)" }}>{msg.ok}</p>}
       <Button disabled={busy} className="w-full sm:w-auto"><Plus size={15} /> {busy ? "Creating…" : "Create ticket"}</Button>
     </form>
   );
@@ -243,7 +243,7 @@ export function TicketDetail({ ticketId, role, onClose, onChanged }: { ticketId:
             <span>By {d.creator_name ?? "—"}</span>
             {d.project_label ? <span>Project: {d.project_label}</span> : null}
             {d.assigned_name ? <span>Assigned: {d.assigned_name}</span> : <span>Unassigned</span>}
-            {d.attachment_url ? <a href={String(d.attachment_url)} target="_blank" rel="noopener" className="font-bold text-[#2563EB] hover:underline">📎 {d.attachment_name ?? "Attachment"}</a> : null}
+            {d.attachment_url ? <a href={String(d.attachment_url)} target="_blank" rel="noopener" className="font-bold text-[var(--accent)] hover:underline">📎 {d.attachment_name ?? "Attachment"}</a> : null}
           </div>
           {closed && <p className="mt-2 text-xs">Closed by {d.closed_by ? "staff" : "—"} · {d.closed_at ? new Date(d.closed_at).toLocaleString() : ""}{d.closing_remark ? ` · “${d.closing_remark}”` : ""}</p>}
         </div>
@@ -254,7 +254,7 @@ export function TicketDetail({ ticketId, role, onClose, onChanged }: { ticketId:
           <div className="max-h-64 space-y-2 overflow-y-auto">
             {publicComments.length === 0 && <p className="text-xs" style={{ color: "var(--text-2)" }}>No replies yet.</p>}
             {publicComments.map((c) => (
-              <div key={c.id} className="rounded-xl border px-3 py-2" style={{ borderColor: c.is_internal ? "#F59E0B" : "var(--border)", background: c.is_internal ? "#FFFBEB" : "var(--bg)" }}>
+              <div key={c.id} className="rounded-xl border px-3 py-2" style={{ borderColor: c.is_internal ? "#F59E0B" : "var(--border)", background: c.is_internal ? "var(--warn-bg)" : "var(--bg)" }}>
                 <p className="flex items-center gap-2 text-xs font-bold">
                   {c.user_name ?? "User"} {c.is_internal && <Badge tone="warning">internal</Badge>}
                   <span className="font-normal" style={{ color: "var(--text-2)" }}>{c.created_at ? new Date(c.created_at).toLocaleString() : ""}</span>
@@ -434,7 +434,7 @@ export function TicketHelpCenter({ role, framed = true }: { role: Role; framed?:
         {tabs.map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)}
             className={`rounded-full px-4 py-1.5 text-xs font-bold ${tab === t.key ? "text-white" : ""}`}
-            style={tab === t.key ? { background: "#2563EB" } : { border: "1px solid var(--border)" }}>
+            style={tab === t.key ? { background: "var(--accent)" } : { border: "1px solid var(--border)" }}>
             {t.label}
           </button>
         ))}

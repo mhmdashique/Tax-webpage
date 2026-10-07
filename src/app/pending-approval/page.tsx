@@ -216,7 +216,7 @@ export default function PendingApprovalPage() {
                   router.refresh();
                 }}
                 className="w-full rounded-[10px] py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
-                style={{ background: "linear-gradient(135deg,#16A34A,#15803D)" }}
+                style={{ background: "linear-gradient(135deg,#2563EB,#1D4ED8)" }}
               >
                 Go to Dashboard →
               </button>

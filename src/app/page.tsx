@@ -263,7 +263,7 @@ export default function LandingPage() {
               <div className="flex items-center gap-1.5 border-b px-4 py-3" style={{ borderColor: "var(--border)" }}>
                 <span className="h-2.5 w-2.5 rounded-full bg-[#F87171]" />
                 <span className="h-2.5 w-2.5 rounded-full bg-[#FBBF24]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#34D399]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#38BDF8]" />
                 <span className="ml-3 rounded-md px-3 py-1 font-mono text-xs" style={{ background: "var(--bg)", color: "var(--text-2)" }}>
                   app.taxdesk.io/admin/dashboard
                 </span>
@@ -428,7 +428,7 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold" style={{ background: "color-mix(in srgb, #16A34A 10%, transparent)", color: "#15803D" }}>
+            <div className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold" style={{ background: "color-mix(in srgb, #2563EB 10%, transparent)", color: "#1D4ED8" }}>
               <CheckCircle2 size={14} /> Last month: 214 filings auto-created · 0 missed
             </div>
           </div>

@@ -42,7 +42,7 @@ const ROLES: Array<{
 function AdminPreview() {
   return (
     <div>
-      <div className="rounded-xl p-4 text-white" style={{ background: "linear-gradient(135deg,#2563EB,#1D4ED8)" }}>
+      <div className="rounded-xl p-4 text-white" style={{ background: "linear-gradient(135deg,var(--accent),var(--accent-hover))" }}>
         <p className="text-xs opacity-80">Firm overview</p>
         <p className="mt-0.5 text-lg font-extrabold">128 active clients</p>
       </div>
@@ -58,7 +58,7 @@ function AdminPreview() {
               <span className="tnum">{v}</span>
             </div>
             <div className="mt-1 h-1.5 overflow-hidden rounded-full" style={{ background: "var(--border)" }}>
-              <div className="h-full rounded-full" style={{ width: w, background: "linear-gradient(90deg,#2563EB,#7C3AED)" }} />
+              <div className="h-full rounded-full" style={{ width: w, background: "linear-gradient(90deg,var(--accent),#7C3AED)" }} />
             </div>
           </div>
         ))}
@@ -78,11 +78,11 @@ function EmployeePreview() {
         <div
           key={t as string}
           className="flex items-center gap-3 rounded-xl border px-3.5 py-3"
-          style={hot ? { borderColor: "#2563EB", background: "var(--accent-tint)" } : { borderColor: "var(--border)", background: "var(--bg)" }}
+          style={hot ? { borderColor: "var(--accent)", background: "var(--accent-tint)" } : { borderColor: "var(--border)", background: "var(--bg)" }}
         >
           <span
             className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2"
-            style={hot ? { borderColor: "#2563EB", background: "#2563EB", color: "#fff", fontSize: 11 } : { borderColor: "var(--border)", color: "transparent", fontSize: 11 }}
+            style={hot ? { borderColor: "var(--accent)", background: "var(--accent)", color: "#fff", fontSize: 11 } : { borderColor: "var(--border)", color: "transparent", fontSize: 11 }}
           >
             ✓
           </span>
@@ -105,7 +105,7 @@ function ClientPreview() {
         <span style={{ color: "var(--text-2)" }}>2 of 3 done</span>
       </div>
       <div className="mt-2 h-2 overflow-hidden rounded-full" style={{ background: "var(--border)" }}>
-        <div className="h-full w-2/3 rounded-full" style={{ background: "linear-gradient(90deg,#16A34A,#4ADE80)" }} />
+        <div className="h-full w-2/3 rounded-full" style={{ background: "linear-gradient(90deg,var(--accent),#60A5FA)" }} />
       </div>
       <div className="mt-3 space-y-2 text-[13px] font-medium">
         {["Bank statements ✓", "Sales invoices ✓", "Expense receipts · upload"].map((t) => (
@@ -137,7 +137,7 @@ export function RoleTabs() {
               className="flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-[15px] font-bold transition-all"
               style={
                 selected
-                  ? { background: "linear-gradient(120deg,#2563EB,#6D28D9)", color: "#fff", boxShadow: "0 6px 18px rgba(37,99,235,.35)" }
+                  ? { background: "linear-gradient(120deg,var(--accent),#6D28D9)", color: "#fff", boxShadow: "0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent)" }
                   : { color: "var(--text-2)" }
               }
             >

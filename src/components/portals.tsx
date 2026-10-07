@@ -8,7 +8,7 @@ import { dueLabel, greeting, formatMoney, downloadFile, buildFilingReceiptPdf } 
 import Link from "next/link";
 import { Upload, FileSignature, User as UserIcon, Bell, Palette, Briefcase, CalendarDays, Inbox, ShieldCheck, Settings2, PenLine, Building2, Camera, Check, Mail, Phone, MapPin, Hash, Sparkles, Globe, Download, Eye } from "lucide-react";
 import { CLIENT_STEPPER, clientStepperIndex, stageLabel, clientActionFor, isComplete, isOverdue, displayStatus } from "@/lib/lifecycle";
-import { ThemePicker, useTheme } from "./theme-provider";
+import { ThemePicker, AccentPicker, useTheme } from "./theme-provider";
 import { WaitingOnClientsCard, fmtDT } from "./task-center";
 import { SearchSelect } from "./search-select";
 import type { Task, TaskEvent } from "@/types/database";
@@ -23,7 +23,7 @@ function useClientTimestamp() {
 }
 
 const inputCls =
-  "mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]";
+  "mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:ring-2 focus:ring-[var(--accent)]/20 focus:border-[var(--accent)]";
 const inputStyle = { borderColor: "var(--border)", background: "var(--bg)" } as const;
 
 function Field({ label, icon, children, hint }: { label: string; icon?: React.ReactNode; children: React.ReactNode; hint?: string }) {
@@ -125,8 +125,9 @@ export function AccountView({ role }: { role: "employee" | "client" | "admin" })
     ? [profile.name, profile.phone, profile.title, profile.business, profile.entity, profile.taxId, profile.address]
     : [profile.name, profile.phone, profile.title, profile.dept];
   const complete = Math.round((fields.filter((v) => String(v ?? "").trim() !== "").length / fields.length) * 100);
-  const accent = role === "client" ? "#2563EB" : "#0D9488";
-  const { resolved } = useTheme();
+  const accent = "var(--accent)";
+  const { resolved, accent: accentName } = useTheme();
+  const pickerAccent = accentName === "green" ? "#16A34A" : accentName === "yellow" ? "#D97706" : "var(--accent)";
   const ink = resolved === "dark" ? "#F1F5F9" : "#111827";
 
   return (
@@ -331,7 +332,7 @@ export function AccountView({ role }: { role: "employee" | "client" | "admin" })
                     type="button" role="switch" aria-checked={two}
                     onClick={() => { setTwo(!two); setSecMsg(two ? "2FA disabled" : "2FA enrolled via authenticator (Supabase Auth)"); flash(); }}
                     className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
-                    style={{ background: two ? "#16A34A" : "var(--border)" }}
+                    style={{ background: two ? "var(--accent)" : "var(--border)" }}
                   >
                     <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all" style={{ left: two ? 22 : 2 }} />
                   </button>
@@ -375,7 +376,9 @@ export function AccountView({ role }: { role: "employee" | "client" | "admin" })
             <Card>
               <SectionHead icon={<Settings2 size={18} />} title="Preferences" desc="Language, appearance and timezone for your workspace." />
               <p className="eyebrow mb-2">Appearance — night mode included</p>
-              <ThemePicker accent={accent} />
+              <ThemePicker accent={pickerAccent} />
+              <p className="eyebrow mb-2 mt-5">Dashboard color — applies everywhere</p>
+              <AccentPicker />
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <Field label="Language" icon={<Globe size={13} />}>
                   <select value={prefs.lang} onChange={(e) => setPrefs({ ...prefs, lang: e.target.value })} className={inputCls} style={inputStyle}>
@@ -408,7 +411,7 @@ export function AccountView({ role }: { role: "employee" | "client" | "admin" })
               />
               {mode === "type" ? (
                 <div>
-                  <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Type your full name to sign" className="w-full rounded-xl border px-4 py-4 font-serif text-2xl italic outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB]" style={inputStyle} />
+                  <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Type your full name to sign" className="w-full rounded-xl border px-4 py-4 font-serif text-2xl italic outline-none focus:ring-2 focus:ring-[var(--accent)]/20 focus:border-[var(--accent)]" style={inputStyle} />
                   {typed.trim() && <p className="mt-2 font-serif text-lg italic" style={{ color: "var(--text-2)" }}>Preview: {typed}</p>}
                 </div>
               ) : (
@@ -461,7 +464,7 @@ function WorkSummary() {
   return (
     <Card>
       <h3 className="font-semibold">Work Summary</h3>
-      <p className="text-sm" style={{ color: "var(--text-2)" }}>{done} tasks done · {filedDone} filings completed · {filings.length} in scope. <Link href="/employee/performance" className="font-semibold text-[#2563EB] hover:underline">Open My Performance</Link></p>
+      <p className="text-sm" style={{ color: "var(--text-2)" }}>{done} tasks done · {filedDone} filings completed · {filings.length} in scope. <Link href="/employee/performance" className="font-semibold text-[var(--accent)] hover:underline">Open My Performance</Link></p>
     </Card>
   );
 }
@@ -481,18 +484,18 @@ export function EmployeeDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl p-6 text-white" style={{ background: "linear-gradient(135deg,#0EA5A4,#2563EB)", boxShadow: "0 8px 30px #0EA5A422" }}>
+      <div className="rounded-2xl p-6 text-white" style={{ background: "linear-gradient(135deg,#0EA5A4,var(--accent))", boxShadow: "0 8px 30px #0EA5A422" }}>
         <h1 className="text-2xl font-bold">{greeting()}, {userName}</h1>
         <p className="mt-1 text-sm opacity-90">{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })} · {dueWeek} filings due this week</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard label="My clients" value={String(clients.length)} icon={<UserIcon size={18} />} spark={<Sparkline points={[2, 3, 4, 5, clients.length || 1]} color="#0EA5A4" />} />
         <StatCard label="Due this week" value={String(dueWeek)} icon={<CalendarDays size={18} />} spark={<Sparkline points={[1, 2, 1, 3, dueWeek]} color="#D97706" />} />
-        <StatCard label="Completed month" value={String(doneMonth)} icon={<Briefcase size={18} />} spark={<Sparkline points={[1, 2, 3, 4, doneMonth]} color="#16A34A" />} />
+        <StatCard label="Completed month" value={String(doneMonth)} icon={<Briefcase size={18} />} spark={<Sparkline points={[1, 2, 3, 4, doneMonth]} color="var(--accent)" />} />
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
-          <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">My Clients</h2><Link href="/employee/clients" className="text-sm font-semibold text-[#2563EB] hover:underline">View all</Link></div>          {clients.length === 0 ? <EmptyState icon={<UserIcon size={22} />} title="No clients assigned to you yet" /> : (
+          <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">My Clients</h2><Link href="/employee/clients" className="text-sm font-semibold text-[var(--accent)] hover:underline">View all</Link></div>          {clients.length === 0 ? <EmptyState icon={<UserIcon size={22} />} title="No clients assigned to you yet" /> : (
             <div className="grid gap-3 sm:grid-cols-2">
               {clients.slice(0, 4).map((c) => (
                 <div key={c.id} className="rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg" style={{ borderColor: "var(--border)" }}>
@@ -548,11 +551,11 @@ export function ClientDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl p-6 text-white md:p-8" style={{ background: "linear-gradient(135deg,#6366F1,#2563EB)", boxShadow: "0 8px 30px #6366F122" }}>
+      <div className="rounded-2xl p-6 text-white md:p-8" style={{ background: "linear-gradient(135deg,#6366F1,var(--accent))", boxShadow: "0 8px 30px #6366F122" }}>
         <div className="flex flex-wrap items-center gap-3">
           <div><h1 className="text-2xl font-bold">Welcome, {userName}</h1><p className="mt-1 text-sm opacity-85">Tax year 2026 · plain-language status below</p></div>
           <div className="ml-auto flex gap-2">
-            <Link href="/client/documents" className="rounded-[10px] bg-white px-4 py-2.5 text-sm font-semibold text-[#1D4ED8]"><Upload size={14} className="mr-1 inline" /> Upload docs</Link>
+            <Link href="/client/documents" className="rounded-[10px] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--accent-hover)]"><Upload size={14} className="mr-1 inline" /> Upload docs</Link>
             <Link href="/client/tax-filings" className="rounded-[10px] border border-white/50 px-4 py-2.5 text-sm font-semibold text-white">View all filings</Link>
           </div>
         </div>
@@ -568,7 +571,7 @@ export function ClientDashboard() {
             <Stepper steps={[...CLIENT_STEPPER]} current={Math.max(stageIdx, 0)} />
             <p className="mt-3 text-sm" style={{ color: "var(--text-2)" }}>
               Current: <span className="font-semibold" style={{ color: overdue ? "#DC2626" : "var(--text)" }}>{overdue ? "Overdue" : stageLabel(String(filing.status), true)}</span> · {filing.tax_type} {filing.period}
-              {action && !overdue && <span> · next: <Link href={action.includes("upload") ? "/client/documents" : action.includes("sign") ? "/client/account" : "/client/payments"} className="font-bold text-[#2563EB] hover:underline">{action}</Link></span>}
+              {action && !overdue && <span> · next: <Link href={action.includes("upload") ? "/client/documents" : action.includes("sign") ? "/client/account" : "/client/payments"} className="font-bold text-[var(--accent)] hover:underline">{action}</Link></span>}
             </p>
           </>
         )}
@@ -624,7 +627,7 @@ export function ClientDashboard() {
               {filingActions.slice(0, 5).map(({ filing: f, action: a }) => (
                 <div key={f.id} className="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm" style={{ borderColor: "var(--border)" }}>
                   <span className="font-medium">{f.tax_type} {f.period}: {a}</span>
-                  <Link href={a!.includes("upload") ? "/client/documents" : a!.includes("sign") ? "/client/account" : "/client/payments"} className="ml-auto text-xs font-bold text-[#2563EB] hover:underline">Do it now</Link>
+                  <Link href={a!.includes("upload") ? "/client/documents" : a!.includes("sign") ? "/client/account" : "/client/payments"} className="ml-auto text-xs font-bold text-[var(--accent)] hover:underline">Do it now</Link>
                 </div>
               ))}
             </div>
@@ -683,7 +686,7 @@ function ClientTasksDashboard({
         ["completed", "Completed"],
       ] as const).map(([key, label]) => <button key={key} role="tab" aria-selected={activeTab === key} onClick={() => onTabChange(key)}
         className={`rounded-full px-3 py-1.5 text-xs font-semibold ${activeTab === key ? "text-white" : ""}`}
-        style={activeTab === key ? { background: "#2563EB" } : { background: "var(--bg)", border: "1px solid var(--border)" }}>
+        style={activeTab === key ? { background: "var(--accent)" } : { background: "var(--bg)", border: "1px solid var(--border)" }}>
         {label} <Badge>{counts[key]}</Badge>
       </button>)}
     </div>
@@ -703,12 +706,12 @@ function ClientTasksDashboard({
             onChange={(id) => { if (id) onStatusChange(task.id, id); }}
             options={["open", "in_progress", "done"].map((s) => ({ id: s, label: s.replace(/_/g, " ") }))}
             placeholder="Status…" disabled={savingTaskId === task.id} /></div>}
-          <Link href={task.related_filing_id ? "/client/tax-filings" : "/client/documents"} className="text-xs font-semibold text-[#2563EB] hover:underline">
+          <Link href={task.related_filing_id ? "/client/tax-filings" : "/client/documents"} className="text-xs font-semibold text-[var(--accent)] hover:underline">
             Open related item
           </Link>
         </div>
       ))}</div>}
-    <Link href="/client/tasks" className="text-xs font-bold text-[#2563EB] hover:underline">View all tasks →</Link>
+    <Link href="/client/tasks" className="text-xs font-bold text-[var(--accent)] hover:underline">View all tasks →</Link>
   </Card>;
 }
 
@@ -880,7 +883,7 @@ export function ClientTaskCenter() {
         {(["todo", "overdue", "completed"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold capitalize ${tab === t ? "text-white" : ""}`}
-            style={tab === t ? { background: "#2563EB" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>
+            style={tab === t ? { background: "var(--accent)" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>
             {t === "todo" ? "To do" : t}
           </button>
         ))}
@@ -889,7 +892,7 @@ export function ClientTaskCenter() {
         <div className="w-[170px] shrink-0"><SearchSelect label="Filing filter" hideLabel clearable={false} value={filingFilter} onChange={setFilingFilter} autoSelectSingle={false}
           options={[{ id: "all", label: "All filings" }, ...filings.map((f) => ({ id: f.id, label: `${f.tax_type} · ${f.period}` }))]} placeholder="All filings" /></div>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search tasks…"
-          className="h-9 w-[180px] shrink-0 rounded-full border px-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]" style={{ background: "var(--surface)", borderColor: "var(--border)" }} />
+          className="h-9 w-[180px] shrink-0 rounded-full border px-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]" style={{ background: "var(--surface)", borderColor: "var(--border)" }} />
       </div>
       {error && <p role="alert" className="text-sm text-[#DC2626]">Could not load your tasks: {error.message}</p>}
       {isLoading ? <div className="skeleton h-40" /> : clientTasks.length === 0 ? (
@@ -908,7 +911,7 @@ export function ClientTaskCenter() {
               <Card key={t.id} className="space-y-3" hover>
                 <div className="flex flex-wrap items-start gap-3">
                   <div className="min-w-0 flex-1">
-                    <button onClick={() => setDetailId(t.id)} className="text-left text-base font-bold text-[#2563EB] hover:underline">{t.title}</button>
+                    <button onClick={() => setDetailId(t.id)} className="text-left text-base font-bold text-[var(--accent)] hover:underline">{t.title}</button>
                     <p className="mt-0.5 text-xs" style={{ color: "var(--text-2)" }}>
                       {filing ? `${filing.tax_type}, ${filing.period} · ` : ""}Assigned by {nameOf(t.created_by)}{t.created_at ? ` · ${new Date(t.created_at).toLocaleDateString()}` : ""}
                     </p>
@@ -1034,9 +1037,9 @@ export function PerformanceView({ role }: { role: string }) {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">{role === "admin" ? "My Performance" : "My Performance"}</h1>
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Filings done" value={String(done)} spark={<Sparkline points={[1, 2, 3, done || 1]} color="#16A34A" />} />
+        <StatCard label="Filings done" value={String(done)} spark={<Sparkline points={[1, 2, 3, done || 1]} color="var(--accent)" />} />
         <StatCard label="Tasks done" value={String(tasks.filter((t) => String(t.status) === "done").length)} spark={<Sparkline points={[2, 3, 2, 5]} />} />
-        <StatCard label="On-time rate" value={filings.length ? `${Math.round((done / filings.length) * 100)}%` : "—"} spark={<Sparkline points={[60, 70, 80, 90]} color="#16A34A" />} />
+        <StatCard label="On-time rate" value={filings.length ? `${Math.round((done / filings.length) * 100)}%` : "—"} spark={<Sparkline points={[60, 70, 80, 90]} color="var(--accent)" />} />
       </div>
       <Card><p className="text-sm" style={{ color: "var(--text-2)" }}>Live from your scoped filings and tasks. Detailed breakdowns appear in Reports.</p></Card>
     </div>
@@ -1097,8 +1100,8 @@ export function HistoryView() {
               <span className="font-semibold">{f.period} · {f.tax_type}</span>
               <Badge tone="success">{stageLabel(String(f.status), true)}</Badge>
               <span className="ml-auto flex items-center gap-2">
-                <button className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:underline" onClick={() => openPreview(f)}><Eye size={13} /> Preview</button>
-                <button className="inline-flex items-center gap-1 text-xs font-bold text-[#2563EB] hover:underline disabled:opacity-50" disabled={busyId === f.id} onClick={() => downloadPdf(f)}><Download size={13} /> {busyId === f.id ? "Preparing…" : "Download PDF"}</button>
+                <button className="inline-flex items-center gap-1 text-xs font-bold text-[var(--accent)] hover:underline" onClick={() => openPreview(f)}><Eye size={13} /> Preview</button>
+                <button className="inline-flex items-center gap-1 text-xs font-bold text-[var(--accent)] hover:underline disabled:opacity-50" disabled={busyId === f.id} onClick={() => downloadPdf(f)}><Download size={13} /> {busyId === f.id ? "Preparing…" : "Download PDF"}</button>
               </span>
             </div>
           ))}

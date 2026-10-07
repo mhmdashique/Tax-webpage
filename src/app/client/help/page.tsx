@@ -5,7 +5,7 @@ import { PremiumHead, ClientHelpFaqs } from "@/components/client-premium";
 import { TicketHelpCenter } from "@/components/tickets";
 import { Card } from "@/components/ui";
 
-const GREEN = "#2563EB";
+const GREEN = "var(--accent)";
 
 export default function P() {
   return (

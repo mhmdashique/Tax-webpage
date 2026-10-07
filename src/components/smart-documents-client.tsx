@@ -23,16 +23,16 @@ function statusLabel(s: string): string {
 }
 
 /* ---------- Premium vault helpers (UI only) ---------- */
-const VAULT_BLUE = "#2563EB";
+const VAULT_BLUE = "var(--accent)";
 
 function fileIcon(name: string) {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   const bg =
-    ext === "pdf" ? "#FEE2E2" : ["xls", "xlsx", "csv"].includes(ext) ? "#DCFCE7"
+    ext === "pdf" ? "#FEE2E2" : ["xls", "xlsx", "csv"].includes(ext) ? "#DBEAFE"
     : ["jpg", "jpeg", "png"].includes(ext) ? "#E0E7FF"
     : ["doc", "docx", "txt"].includes(ext) ? "#FEF3C7" : "var(--accent-tint)";
   const fg =
-    ext === "pdf" ? "#DC2626" : ["xls", "xlsx", "csv"].includes(ext) ? "#16A34A"
+    ext === "pdf" ? "#DC2626" : ["xls", "xlsx", "csv"].includes(ext) ? "var(--accent-hover)"
     : ["jpg", "jpeg", "png"].includes(ext) ? "#4F46E5"
     : ["doc", "docx", "txt"].includes(ext) ? "#D97706" : VAULT_BLUE;
   return (
@@ -43,7 +43,7 @@ function fileIcon(name: string) {
 }
 
 function statusDot(s: string): string {
-  if (s === "received") return "#16A34A";
+  if (s === "received") return "var(--accent)";
   if (s === "rejected") return "#DC2626";
   if (s === "uploaded") return VAULT_BLUE;
   return "#F59E0B";
@@ -71,7 +71,7 @@ function ProgressRing({ received, required }: { received: number; required: numb
   );
 }
 
-const inputCls = "mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm font-normal outline-none transition-all focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15";
+const inputCls = "mt-1.5 w-full rounded-xl border px-3.5 py-2.5 text-sm font-normal outline-none transition-all focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15";
 
 function regionOf(j: Jurisdiction): string {
   const r = (j.region ?? "").trim();
@@ -203,7 +203,7 @@ function CountryDropdown({
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         onKeyDown={(e) => { if (e.key === "ArrowDown" && !open) { e.preventDefault(); setOpen(true); } }}
-        className="mt-1.5 flex w-full items-center gap-2 rounded-xl border px-3.5 py-2.5 text-left text-sm font-normal transition-all focus:border-[#2563EB]"
+        className="mt-1.5 flex w-full items-center gap-2 rounded-xl border px-3.5 py-2.5 text-left text-sm font-normal transition-all focus:border-[var(--accent)]"
         style={{ borderColor: "var(--border)", background: "var(--bg)" }}
       >
         <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
@@ -361,7 +361,7 @@ function TaxTypeDropdown({
         disabled={disabled}
         onClick={() => !disabled && setOpen((o) => !o)}
         onKeyDown={(e) => { if (e.key === "ArrowDown" && !open && !disabled) { e.preventDefault(); setOpen(true); } }}
-        className="mt-1.5 flex w-full items-center gap-2 rounded-xl border px-3.5 py-2.5 text-left text-sm font-normal transition-all focus:border-[#2563EB] disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-1.5 flex w-full items-center gap-2 rounded-xl border px-3.5 py-2.5 text-left text-sm font-normal transition-all focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
         style={{ borderColor: "var(--border)", background: "var(--bg)" }}
         title={disabled ? "Select a country first" : "Select tax type"}
       >
@@ -498,7 +498,7 @@ function VersionHistory({ documentId, currentVersionNo }: { documentId: string; 
             <Badge tone={isCurrent ? "success" : "neutral"}>v{v.version_no}{isCurrent ? " · current" : ""}</Badge>
             <span className="min-w-0 flex-1 truncate font-medium">{v.file_name}</span>
             <span style={{ color: "var(--text-2)" }}>{(v.created_at ?? "").slice(0, 10)}</span>
-            <button onClick={() => downloadVersion(v)} className="font-bold text-[#2563EB] hover:underline">Download</button>
+            <button onClick={() => downloadVersion(v)} className="font-bold text-[var(--accent)] hover:underline">Download</button>
           </div>
         );
       })}
@@ -929,7 +929,7 @@ export function ClientDocumentsView() {
     <div className="space-y-5">
       {/* 1. Vault hero */}
       <section className="relative overflow-hidden rounded-2xl p-5 md:p-6" style={{ background: "var(--hero-bg)", border: "1px solid var(--hero-border)" }}>
-        <div aria-hidden className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full" style={{ background: "radial-gradient(closest-side,rgba(37,99,235,.10),transparent)" }} />
+        <div aria-hidden className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full" style={{ background: "radial-gradient(closest-side,color-mix(in srgb, var(--accent) 10%, transparent),transparent)" }} />
         <div className="relative flex flex-wrap items-center gap-5">
           <div className="min-w-0 flex-1">
             <p className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em]" style={{ background: "var(--hero-chip-bg)", color: "var(--hero-chip-tx)" }}>
@@ -946,7 +946,7 @@ export function ClientDocumentsView() {
                 <CloudUpload size={15} />{busy ? `Uploading ${busy}…` : "Upload docs"}
                 <input type="file" className="hidden" multiple accept={ACCEPT} onChange={(e) => { stageFiles(e.target.files); e.target.value = ""; }} />
               </label>
-              <button onClick={bulkZip} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors hover:bg-slate-50" style={{ borderColor: "#BFDBFE", color: VAULT_BLUE }}>
+              <button onClick={bulkZip} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors hover:bg-[var(--surface-muted)]" style={{ borderColor: "var(--border)", color: VAULT_BLUE }}>
                 <Download size={15} /> Bulk ZIP
               </button>
               {!ready && <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: "#64748B" }}><ArrowRight size={13} /> Select filing details below to enable uploads</span>}
@@ -1055,7 +1055,7 @@ export function ClientDocumentsView() {
         </div>
         {progress.required > 0 && (
           <div className="mb-4 h-2 overflow-hidden rounded-full" style={{ background: "var(--hero-track)" }}>
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.round((progress.received / progress.required) * 100)}%`, background: "linear-gradient(90deg,#2563EB,#38BDF8)" }} />
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.round((progress.received / progress.required) * 100)}%`, background: "linear-gradient(90deg,var(--accent),#38BDF8)" }} />
           </div>
         )}
         {rLoading ? <div className="space-y-2">{[1, 2, 3].map((i) => <div key={i} className="skeleton h-14" />)}</div>
@@ -1106,7 +1106,7 @@ export function ClientDocumentsView() {
             </div>
           )}
         {formError && <p className="mt-2 text-xs font-medium" style={{ color: "#DC2626" }}>{formError}</p>}
-        {successMsg && <p className="mt-2 text-xs font-medium" style={{ color: "#16A34A" }}>{successMsg}</p>}
+        {successMsg && <p className="mt-2 text-xs font-medium" style={{ color: "var(--accent)" }}>{successMsg}</p>}
       </Card>
 
       {/* 5. Staged uploads */}
@@ -1150,15 +1150,15 @@ export function ClientDocumentsView() {
           <div className="relative ml-auto">
             <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-2)" }} />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search files…"
-              className="rounded-xl border py-2 pl-9 pr-3 text-xs outline-none transition-all focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15" style={{ borderColor: "var(--border)", background: "var(--bg)", minWidth: 200 }} />
+              className="rounded-xl border py-2 pl-9 pr-3 text-xs outline-none transition-all focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15" style={{ borderColor: "var(--border)", background: "var(--bg)", minWidth: 200 }} />
           </div>
         </div>
         <div className="mb-4 flex flex-wrap items-center gap-2">
           {["all", "pending", "uploaded", "received", "rejected"].map((c) => (
             <button key={c} onClick={() => setStatusChip(c)} className="rounded-full px-3.5 py-1.5 text-xs font-bold capitalize transition-all"
-              style={statusChip === c ? { background: VAULT_BLUE, color: "#fff", boxShadow: "0 4px 12px rgba(37,99,235,.3)" } : { border: "1px solid var(--border)", color: "var(--text-2)" }}>{c}</button>
+              style={statusChip === c ? { background: VAULT_BLUE, color: "#fff", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent) 30%, transparent)" } : { border: "1px solid var(--border)", color: "var(--text-2)" }}>{c}</button>
           ))}
-          <button className="ml-auto inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-bold transition-colors hover:bg-slate-50" style={{ borderColor: "var(--border)" }} onClick={bulkZip}><Download size={13} /> ZIP{selected.length > 0 ? ` (${selected.length})` : ""}</button>
+          <button className="ml-auto inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-bold transition-colors hover:bg-[var(--surface-muted)]" style={{ borderColor: "var(--border)" }} onClick={bulkZip}><Download size={13} /> ZIP{selected.length > 0 ? ` (${selected.length})` : ""}</button>
         </div>
         {successMsg && (
           <p className="rounded-xl px-4 py-2 text-xs font-semibold" style={{ background: "var(--success-bg)", color: "var(--success-tx)" }}>{successMsg}</p>
@@ -1186,7 +1186,7 @@ export function ClientDocumentsView() {
                   return (
                     <div key={d.id} className="rounded-2xl border px-4 py-3 text-sm transition-all hover:shadow-md" style={{ borderColor: "var(--row-border)", background: "var(--row-bg)" }}>
                       <div className="flex flex-wrap items-center gap-3">
-                        <input type="checkbox" className="h-4 w-4 accent-[#2563EB]" checked={selected.includes(d.id)} onChange={() => setSelected((p) => p.includes(d.id) ? p.filter((x) => x !== d.id) : [...p, d.id])} aria-label={`Select ${d.file_name}`} />
+                        <input type="checkbox" className="h-4 w-4 accent-[var(--accent)]" checked={selected.includes(d.id)} onChange={() => setSelected((p) => p.includes(d.id) ? p.filter((x) => x !== d.id) : [...p, d.id])} aria-label={`Select ${d.file_name}`} />
                         {fileIcon(d.file_name)}
                         <span className="min-w-0 flex-1"><span className="block truncate font-bold" style={{ color: "var(--text)" }}>{d.file_name}</span>
                           <span className="mt-0.5 block text-xs" style={{ color: "var(--text-2)" }}>
@@ -1198,10 +1198,10 @@ export function ClientDocumentsView() {
                         {vNo > 1 && <Badge tone="accent">Re-uploaded</Badge>}
                         <span className="flex flex-wrap items-center gap-1.5">
                         <button onClick={() => viewDocument(d)} disabled={viewingId === d.id}
-                          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-slate-50 disabled:opacity-50" style={{ borderColor: "var(--border)" }} title="View latest document">
+                          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-[var(--surface-muted)] disabled:opacity-50" style={{ borderColor: "var(--border)" }} title="View latest document">
                           <Eye size={12} />{viewingId === d.id ? "Opening…" : "View"}
                         </button>
-                        <button onClick={() => openEdit(d)} className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-slate-50" style={{ borderColor: "var(--border)" }} title="Edit name, period and notes">
+                        <button onClick={() => openEdit(d)} className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-[var(--surface-muted)]" style={{ borderColor: "var(--border)" }} title="Edit name, period and notes">
                           <Pencil size={12} />Edit
                         </button>
                         {locked ? (
@@ -1211,7 +1211,7 @@ export function ClientDocumentsView() {
                             <Replace size={12} />Replace
                           </button>
                         ) : (
-                          <button className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-slate-50"
+                          <button className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-[var(--surface-muted)]"
                             style={{ borderColor: "var(--border)" }} title="Replace with a new file (keeps history)"
                             disabled={isReplacing}
                             onClick={() => { setReplaceTarget(d); replaceFileRef.current?.click(); }}>
@@ -1219,7 +1219,7 @@ export function ClientDocumentsView() {
                           </button>
                         )}
                         <button onClick={() => setHistoryOpen((p) => ({ ...p, [d.id]: !histOpen }))}
-                          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-slate-50" style={{ borderColor: "var(--border)" }} title="View version history" aria-expanded={histOpen}>
+                          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-[var(--surface-muted)]" style={{ borderColor: "var(--border)" }} title="View version history" aria-expanded={histOpen}>
                           <History size={12} />History
                         </button>
                         {st !== "received" && !locked && (

@@ -2,15 +2,16 @@
 import Link from "next/link";
 import {
   LayoutDashboard,
-  CheckSquare,
+  Users,
   FileText,
+  CheckSquare,
   FolderOpen,
   MessagesSquare,
   CreditCard,
-  History,
+  Gauge,
+  BarChart3,
   User as UserIcon,
   LifeBuoy,
-  Phone,
   LogOut,
   X,
   ChevronRight,
@@ -22,36 +23,38 @@ import type { NavItem } from "./shell";
 
 const ICONS: Record<string, React.ReactNode> = {
   dashboard: <LayoutDashboard size={18} />,
-  tasks: <CheckSquare size={18} />,
+  clients: <Users size={18} />,
   filings: <FileText size={18} />,
+  tasks: <CheckSquare size={18} />,
   documents: <FolderOpen size={18} />,
   messages: <MessagesSquare size={18} />,
   payments: <CreditCard size={18} />,
-  history: <History size={18} />,
+  performance: <Gauge size={18} />,
+  reports: <BarChart3 size={18} />,
   account: <UserIcon size={18} />,
   help: <LifeBuoy size={18} />,
-  contact: <Phone size={18} />,
 };
 
-export function clientNav(): { overview: NavItem[]; workspace: NavItem[]; finance: NavItem[]; support: NavItem[] } {
-  const base = "/client";
+export function employeeNav(): { overview: NavItem[]; workspace: NavItem[]; finance: NavItem[]; support: NavItem[] } {
+  const base = "/employee";
   const ic = (k: string) => ICONS[k];
   return {
     overview: [{ href: `${base}/dashboard`, label: "Dashboard", icon: ic("dashboard") }],
     workspace: [
-      { href: `${base}/tasks`, label: "Tasks", icon: ic("tasks") },
+      { href: `${base}/clients`, label: "Clients", icon: ic("clients") },
       { href: `${base}/tax-filings`, label: "Tax Filings", icon: ic("filings") },
+      { href: `${base}/tasks`, label: "Task Management", icon: ic("tasks") },
       { href: `${base}/documents`, label: "Documents", icon: ic("documents") },
       { href: `${base}/messages`, label: "Messages", icon: ic("messages") },
     ],
     finance: [
       { href: `${base}/payments`, label: "Payments", icon: ic("payments") },
-      { href: `${base}/history`, label: "Filing History", icon: ic("history") },
-      { href: `${base}/account`, label: "Account & Profile", icon: ic("account") },
+      { href: `${base}/performance`, label: "My Performance", icon: ic("performance") },
+      { href: `${base}/reports`, label: "Reports & Analytics", icon: ic("reports") },
     ],
     support: [
+      { href: `${base}/account`, label: "Account & Profile", icon: ic("account") },
       { href: `${base}/help`, label: "Help & Support", icon: ic("help") },
-      { href: `${base}/contact`, label: "Contact Accountant", icon: ic("contact") },
     ],
   };
 }
@@ -59,7 +62,7 @@ export function clientNav(): { overview: NavItem[]; workspace: NavItem[]; financ
 function isActive(pathname: string | null, href: string) {
   if (!pathname) return false;
   if (pathname === href) return true;
-  if (href.endsWith("/dashboard") && (pathname === "/client" || pathname === "/client/")) return true;
+  if (href.endsWith("/dashboard") && (pathname === "/employee" || pathname === "/employee/")) return true;
   return false;
 }
 
@@ -99,7 +102,7 @@ function NavRow({
       {!collapsed && item.badge ? (
         <span
           className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white"
-          style={{ background: "#DC2626" }}
+          style={{ background: item.badgeTone === "red" ? "#DC2626" : "var(--accent)" }}
         >
           {item.badge > 9 ? "9+" : item.badge}
         </span>
@@ -108,7 +111,7 @@ function NavRow({
       {collapsed && item.badge ? (
         <span
           className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
-          style={{ background: "#DC2626", boxShadow: "0 0 0 2px var(--surface)" }}
+          style={{ background: item.badgeTone === "red" ? "#DC2626" : "var(--accent)", boxShadow: "0 0 0 2px var(--surface)" }}
         >
           {item.badge > 9 ? "9+" : item.badge}
         </span>
@@ -125,7 +128,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ClientSidebar({
+export function EmployeeSidebar({
   name,
   pathname,
   menuWithBadges,
@@ -144,7 +147,7 @@ export function ClientSidebar({
 }) {
   const byHref = new Map([...menuWithBadges, ...support].map((i) => [i.href, i]));
   const pick = (href: string, fallback: NavItem) => byHref.get(href) ?? fallback;
-  const groups = clientNav();
+  const groups = employeeNav();
   const overview = groups.overview.map((g) => pick(g.href, g));
   const workspace = groups.workspace.map((g) => pick(g.href, g));
   const finance = groups.finance.map((g) => pick(g.href, g));
@@ -152,7 +155,7 @@ export function ClientSidebar({
 
   return (
     <aside
-      aria-label="Client navigation"
+      aria-label="Employee navigation"
       className="client-side client-side-light sticky top-0 hidden h-screen shrink-0 flex-col md:flex"
       style={{
         width: collapsed ? 84 : 280,
@@ -173,7 +176,7 @@ export function ClientSidebar({
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-bold leading-none" style={{ color: "var(--text)" }}>TaxDesk</p>
             <p className="mt-1 text-[11px] font-medium" style={{ color: "var(--text-2)" }}>
-              FilePilot OS · Client
+              FilePilot OS · Employee
             </p>
           </div>
         )}
@@ -202,7 +205,7 @@ export function ClientSidebar({
           ))}
         </nav>
         <nav className="space-y-1" aria-label="Finance">
-          {!collapsed && <SectionLabel>Finance & account</SectionLabel>}
+          {!collapsed && <SectionLabel>Finance & growth</SectionLabel>}
           {finance.map((item) => (
             <NavRow key={item.href} item={item} active={isActive(pathname, item.href)} collapsed={collapsed} />
           ))}
@@ -220,14 +223,14 @@ export function ClientSidebar({
             className="mt-5 rounded-2xl p-4"
             style={{ background: "var(--surface-muted)", border: "1px solid var(--border)" }}
           >
-            <p className="text-[13px] font-bold leading-snug" style={{ color: "var(--text)" }}>Need a hand with uploads?</p>
-            <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--text-2)" }}>Your checklist clears itself once files are linked.</p>
+            <p className="text-[13px] font-bold leading-snug" style={{ color: "var(--text)" }}>Review queue building up?</p>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--text-2)" }}>Accept or reject client uploads from one queue.</p>
             <Link
-              href="/client/documents"
+              href="/employee/documents"
               className="mt-3 block rounded-xl px-3 py-2 text-center text-[13px] font-bold text-white transition-transform hover:-translate-y-0.5"
               style={{ background: "var(--accent)" }}
             >
-              Open upload centre
+              Open review queue
             </Link>
           </div>
         )}
@@ -245,9 +248,9 @@ export function ClientSidebar({
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <p className="truncate text-[13.5px] font-bold" style={{ color: "var(--text)" }}>{name}</p>
-              <span className="mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide" style={{ background: "var(--accent-tint)", color: "var(--accent-hover)" }}>
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--accent)" }} />
-                CLIENT · Online
+              <span className="mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide" style={{ background: "#DCFCE7", color: "#16A34A" }}>
+                <span className="h-2 w-2 animate-pulse rounded-full" style={{ background: "#16A34A", boxShadow: "0 0 8px rgba(34,197,94,.9)" }} />
+                Online
               </span>
             </div>
           )}
@@ -265,7 +268,7 @@ export function ClientSidebar({
   );
 }
 
-export function ClientMobileSidebar({
+export function EmployeeMobileSidebar({
   name,
   pathname,
   menuWithBadges,
@@ -287,7 +290,7 @@ export function ClientMobileSidebar({
       <aside
         className="client-side client-side-light absolute left-0 top-0 flex h-full w-[300px] flex-col"
         style={{ background: "var(--surface)", borderRight: "1px solid var(--border)", animation: "client-drawer 220ms cubic-bezier(.22,1,.36,1)" }}
-        aria-label="Client navigation mobile"
+        aria-label="Employee navigation mobile"
       >
         <div className="flex h-16 items-center gap-3 px-4" style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex h-10 w-10 items-center justify-center rounded-xl text-lg font-bold text-white" style={{ background: "var(--accent)" }}>

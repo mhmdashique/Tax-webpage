@@ -10,7 +10,38 @@ const Ctx = createContext<{
   resolved: Resolved;
   setTheme: (t: Theme) => void;
   toggle: () => void;
-}>({ theme: "system", resolved: "light", setTheme: () => {}, toggle: () => {} });
+  accent: Accent;
+  setAccent: (a: Accent) => void;
+}>({ theme: "system", resolved: "light", setTheme: () => {}, toggle: () => {}, accent: "blue", setAccent: () => {} });
+
+export type Accent = "blue" | "green" | "yellow";
+
+const ACCENTS: Record<Accent, { accent: string; hover: string; tint: string; tintDark: string }> = {
+  blue: { accent: "#2563EB", hover: "#1D4ED8", tint: "#DBEAFE", tintDark: "rgba(96,165,250,0.14)" },
+  green: { accent: "#16A34A", hover: "#15803D", tint: "#DCFCE7", tintDark: "rgba(34,197,94,0.14)" },
+  yellow: { accent: "#D97706", hover: "#B45309", tint: "#FEF3C7", tintDark: "rgba(251,191,36,0.16)" },
+};
+
+function readAccent(): Accent {
+  if (typeof document === "undefined") return "blue";
+  const c = document.cookie.match(/(?:^|; )taxdesk-accent=(blue|green|yellow)/)?.[1];
+  if (c === "blue" || c === "green" || c === "yellow") return c;
+  try {
+    const ls = localStorage.getItem("taxdesk-accent");
+    if (ls === "blue" || ls === "green" || ls === "yellow") return ls;
+  } catch {}
+  return "blue";
+}
+
+function applyAccent(a: Accent, dark: boolean) {
+  if (typeof document === "undefined") return;
+  const p = ACCENTS[a] ?? ACCENTS.blue;
+  const root = document.documentElement;
+  root.dataset.accent = a;
+  root.style.setProperty("--accent", p.accent);
+  root.style.setProperty("--accent-hover", p.hover);
+  root.style.setProperty("--accent-tint", dark ? p.tintDark : p.tint);
+}
 
 function readStored(): Theme {
   if (typeof document === "undefined") return "system";
@@ -56,6 +87,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const resolved: Resolved = theme === "system" ? (sysDark ? "dark" : "light") : theme;
 
+  const [accent, setAccentState] = useState<Accent>(() =>
+    typeof document === "undefined" ? "blue" : readAccent()
+  );
+
   useEffect(() => {
     const cleanup = applyResolved(resolved);
     document.cookie = `taxdesk-theme=${theme}; path=/; max-age=31536000; samesite=lax`;
@@ -65,13 +100,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return cleanup;
   }, [theme, resolved]);
 
+  useEffect(() => {
+    applyAccent(accent, resolved === "dark");
+    document.cookie = `taxdesk-accent=${accent}; path=/; max-age=31536000; samesite=lax`;
+    try {
+      localStorage.setItem("taxdesk-accent", accent);
+    } catch {}
+  }, [accent, resolved]);
+
   const setTheme = useCallback((t: Theme) => setThemeState(t), []);
   const toggle = useCallback(
     () => setThemeState((t) => ((t === "system" ? systemIsDark() : t === "dark") ? "light" : "dark")),
     []
   );
+  const setAccent = useCallback((a: Accent) => setAccentState(a), []);
 
-  const value = useMemo(() => ({ theme, resolved, setTheme, toggle }), [theme, resolved, setTheme, toggle]);
+  const value = useMemo(() => ({ theme, resolved, setTheme, toggle, accent, setAccent }), [theme, resolved, setTheme, toggle, accent, setAccent]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
@@ -151,6 +195,56 @@ export function ThemePicker({ accent = "#2563EB" }: { accent?: string }) {
       </div>
       <p className="mt-2 text-xs" style={{ color: "var(--text-2)" }}>
         System follows your device setting and updates automatically at sunset / sunrise.
+      </p>
+    </div>
+  );
+}
+
+const ACCENT_OPTIONS: { key: Accent; label: string; desc: string; swatch: string }[] = [
+  { key: "blue", label: "Blue", desc: "Default workspace", swatch: "#2563EB" },
+  { key: "green", label: "Green", desc: "Fresh & calm", swatch: "#16A34A" },
+  { key: "yellow", label: "Yellow", desc: "Warm & bold", swatch: "#D97706" },
+];
+
+export function AccentPicker() {
+  const { accent, setAccent } = useTheme();
+  return (
+    <div>
+      <div className="grid gap-2.5 sm:grid-cols-3" role="radiogroup" aria-label="Dashboard color">
+        {ACCENT_OPTIONS.map((o) => {
+          const active = accent === o.key;
+          return (
+            <button
+              key={o.key}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => setAccent(o.key)}
+              className="group rounded-2xl border p-3 text-left transition-all hover:-translate-y-0.5"
+              style={
+                active
+                  ? { borderColor: o.swatch, boxShadow: `0 0 0 2px ${o.swatch}33, 0 8px 20px rgba(15,23,42,.10)`, background: "var(--surface)" }
+                  : { borderColor: "var(--border)", background: "var(--surface)" }
+              }
+            >
+              <span className="flex items-center gap-2.5">
+                <span className="h-9 w-9 shrink-0 rounded-xl" style={{ background: o.swatch }} aria-hidden />
+                <span>
+                  <span className="block text-sm font-bold">{o.label}</span>
+                  <span className="block text-xs" style={{ color: "var(--text-2)" }}>{o.desc}</span>
+                </span>
+                {active && (
+                  <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full text-white" style={{ background: o.swatch }}>
+                    <Check size={12} />
+                  </span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-xs" style={{ color: "var(--text-2)" }}>
+        Applies instantly across the dashboard — buttons, active nav, highlights and charts follow this color.
       </p>
     </div>
   );

@@ -1,1 +1,1 @@
-﻿"use client"; import { ReportsView } from "@/components/reports-settings"; export default function P(){ return <ReportsView/>; }
+﻿"use client"; import { EmployeeReportsPremium } from "@/components/employee-premium"; export default function P(){ return <EmployeeReportsPremium/>; }

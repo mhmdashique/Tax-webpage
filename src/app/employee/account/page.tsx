@@ -1,1 +1,1 @@
-﻿"use client"; import { AccountView } from "@/components/portals"; export default function P(){ return <AccountView role="employee"/>; }
+﻿"use client"; import { EmployeeAccountPremium } from "@/components/employee-premium"; export default function P(){ return <EmployeeAccountPremium/>; }

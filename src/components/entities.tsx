@@ -138,7 +138,7 @@ export function ClientsView({ role }: { role: "admin" | "employee" }) {
               {(["details", "tasks"] as const).map((t) => (
                 <button key={t} onClick={() => setProfileTab(t)}
                   className={`rounded-full px-4 py-1.5 text-xs font-semibold capitalize ${profileTab === t ? "text-white" : ""}`}
-                  style={profileTab === t ? { background: "#2563EB" } : { border: "1px solid var(--border)" }}>
+                  style={profileTab === t ? { background: "var(--accent)" } : { border: "1px solid var(--border)" }}>
                   {t === "details" ? "Details" : `Tasks (${tasks.filter((t) => t.related_client_id === selectedClient.id).length})`}
                 </button>
               ))}
@@ -339,7 +339,7 @@ export function FilingsView({ role }: { role: "admin" | "employee" | "client" })
       <div className="flex flex-wrap gap-2">
         {filters.map((f) => (
           <button key={f} onClick={() => setFilter(f)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${filter === f ? "text-white" : ""}`}
-            style={filter === f ? { background: "#2563EB" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>{filterLabel(f)}</button>
+            style={filter === f ? { background: "var(--accent)" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>{filterLabel(f)}</button>
         ))}
       </div>
       <Card>
@@ -364,7 +364,7 @@ export function FilingsView({ role }: { role: "admin" | "employee" | "client" })
             <span key="o" className="tnum">{formatMoney(Number(f.amount_owed ?? 0))}</span>,
             <span key="n" className="flex gap-1" onClick={(e) => e.stopPropagation()}>
               {nxt && canAdvance(role, String(f.status)) && eff !== "overdue" && !paymentPending ? (
-                <button disabled={advancing === f.id} onClick={() => advance(f)} className="rounded-lg px-2 py-1 text-xs font-bold text-white disabled:opacity-50" style={{ background: "#2563EB" }} title={FILING_STAGES.find((s) => s.key === nxt)?.desc}>
+                <button disabled={advancing === f.id} onClick={() => advance(f)} className="rounded-lg px-2 py-1 text-xs font-bold text-white disabled:opacity-50" style={{ background: "var(--accent)" }} title={FILING_STAGES.find((s) => s.key === nxt)?.desc}>
                   {advancing === f.id ? "…" : `→ ${stageLabel(nxt, role === "client")}`}
                 </button>
               ) : paymentPending ? <span className="text-xs text-[#D97706]" title="Payment must be cleared before completion">{payment ? `Payment pending: ${formatMoney(Number(payment.summary.balance))}` : "GST payment calculation pending"}</span>
@@ -426,92 +426,82 @@ export function FilingsView({ role }: { role: "admin" | "employee" | "client" })
             { icon: ReceiptText, label: "Filed on", value: selectedFiling.filed_at ? selectedFiling.filed_at.slice(0, 10) : "Not filed yet", sub: stageLabel(String(selectedFiling.status), role === "client") },
           ];
           return (
-          <div className="space-y-5">
-            <div className="inline-flex rounded-full border p-1" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+          <div className="space-y-6">
+            <div className="flex gap-6 border-b" style={{ borderColor: "var(--border)" }}>
               {(["details", "tasks"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setFilingModalTab(tab)}
-                  className={`rounded-full px-5 py-1.5 text-sm font-semibold capitalize transition-all ${filingModalTab === tab ? "text-white shadow-sm" : ""}`}
-                  style={filingModalTab === tab ? { background: "#2563EB" } : { color: "var(--text-2)" }}
+                  className="relative pb-2.5 text-sm font-semibold capitalize transition-colors"
+                  style={filingModalTab === tab ? { color: "var(--text)" } : { color: "var(--text-2)" }}
                 >
                   {tab}
+                  {filingModalTab === tab && (
+                    <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full" style={{ background: "var(--accent)" }} />
+                  )}
                 </button>
               ))}
             </div>
             {filingModalTab === "details" ? <>
-            <div className="overflow-hidden rounded-2xl border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-              <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg, #2563EB 0%, #60A5FA 100%)" }} />
-              <div className="flex flex-wrap items-center gap-4 p-4 sm:p-5">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm" style={{ background: "linear-gradient(135deg, #2563EB, #60A5FA)" }}>
-                  <FileText size={22} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--text-2)" }}>Tax filing · {selectedFiling.period || "—"}</p>
-                    {overdue && <Badge tone="danger">Overdue</Badge>}
-                  </div>
-                  <h4 className="mt-1 truncate text-xl font-bold tracking-tight">{selectedFiling.tax_type}</h4>
-                  <p className="mt-0.5 truncate text-sm" style={{ color: "var(--text-2)" }}>
-                    {clientName ? `${clientName} · ` : ""}Due {selectedFiling.due_date || "—"}{selectedFiling.due_date ? ` (${dueLabel(selectedFiling.due_date)})` : ""}
-                  </p>
-                </div>
-                <StatusBadge status={stageLabel(String(selectedFiling.status), role === "client")} />
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em]" style={{ color: "var(--text-2)" }}>Tax filing · {selectedFiling.period || "—"}</p>
+                {overdue && <Badge tone="danger">Overdue</Badge>}
+                <span className="ml-auto"><StatusBadge status={stageLabel(String(selectedFiling.status), role === "client")} /></span>
               </div>
-              <div className="px-4 pb-4 sm:px-5">
-                <div className="flex items-center justify-between text-xs font-medium" style={{ color: "var(--text-2)" }}>
-                  <span>Step {stageIdx + 1} of {totalStages} · {FILING_STAGES[stageIdx]?.label}</span>
-                  <span className="tnum">{progress}%</span>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full" style={{ background: "color-mix(in srgb, var(--text-2) 15%, transparent)" }}>
-                  <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: overdue ? "#DC2626" : "linear-gradient(90deg, #2563EB, #60A5FA)" }} />
-                </div>
-                <div className="mt-4 flex gap-1 overflow-x-auto pb-1">
-                  {FILING_STAGES.map((stage, i) => {
-                    const done = i < stageIdx;
-                    const current = i === stageIdx;
-                    return (
-                      <div key={stage.key} className="flex min-w-0 flex-1 items-start gap-1.5">
-                        <div className="flex min-w-[64px] flex-col items-center gap-1.5 text-center">
-                          <span
-                            className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold"
-                            style={
-                              done
-                                ? { background: "#16A34A", color: "#fff" }
-                                : current
-                                  ? { background: "#2563EB", color: "#fff", boxShadow: "0 0 0 4px rgba(37,99,235,0.18)" }
-                                  : { background: "color-mix(in srgb, var(--text-2) 15%, transparent)", color: "var(--text-2)" }
-                            }
-                            title={stage.desc}
-                          >
-                            {done ? <Check size={13} strokeWidth={3} /> : i + 1}
-                          </span>
-                          <span className="text-[10px] font-semibold leading-tight" style={{ color: current ? "var(--text)" : "var(--text-2)" }}>
-                            {role === "client" ? stage.clientLabel : stage.label}
-                          </span>
-                        </div>
-                        {i < totalStages - 1 && <div className="mt-3 h-0.5 min-w-2 flex-1 rounded" style={{ background: i < stageIdx ? "#16A34A" : "var(--border)" }} />}
-                      </div>
-                    );
-                  })}
-                </div>
+              <h4 className="mt-1.5 text-[22px] font-bold leading-tight tracking-tight">{selectedFiling.tax_type}</h4>
+              <p className="mt-1 text-sm" style={{ color: "var(--text-2)" }}>
+                {clientName ? `${clientName} · ` : ""}Due {selectedFiling.due_date || "—"}{selectedFiling.due_date ? ` (${dueLabel(selectedFiling.due_date)})` : ""}
+              </p>
+            </div>
+            <div>
+              <div className="flex items-baseline justify-between text-xs" style={{ color: "var(--text-2)" }}>
+                <span className="font-medium">Step {stageIdx + 1} of {totalStages} · {FILING_STAGES[stageIdx]?.label}</span>
+                <span className="tnum text-sm font-bold" style={{ color: "var(--text)" }}>{progress}%</span>
               </div>
+              <div className="mt-2 h-1 overflow-hidden rounded-full" style={{ background: "var(--border)" }}>
+                <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: overdue ? "#DC2626" : "var(--accent)" }} />
+              </div>
+              <ol className="mt-4 flex overflow-x-auto">
+                {FILING_STAGES.map((stage, i) => {
+                  const done = i < stageIdx;
+                  const current = i === stageIdx;
+                  return (
+                    <li key={stage.key} className="flex min-w-[68px] flex-1 flex-col items-center gap-1.5 text-center" title={stage.desc}>
+                      <span className="flex w-full items-center">
+                        <span className="h-px flex-1" style={{ background: i > 0 ? (i <= stageIdx ? "var(--accent)" : "var(--border)") : "transparent" }} />
+                        <span
+                          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full"
+                          style={
+                            done
+                              ? { background: "var(--accent)", color: "#fff" }
+                              : current
+                                ? { border: "2px solid var(--accent)", boxShadow: "0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent)" }
+                                : { border: "1.5px solid var(--border)" }
+                          }
+                        >
+                          {done && <Check size={9} strokeWidth={4} />}
+                        </span>
+                        <span className="h-px flex-1" style={{ background: i < totalStages - 1 ? (i < stageIdx ? "var(--accent)" : "var(--border)") : "transparent" }} />
+                      </span>
+                      <span className="text-[10px] font-semibold leading-tight" style={{ color: current ? "var(--text)" : "var(--text-2)" }}>
+                        {role === "client" ? stage.clientLabel : stage.label}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-5 border-t pt-5 sm:grid-cols-4" style={{ borderColor: "var(--border)" }}>
               {stats.map((s) => (
-                <div key={s.label} className="rounded-2xl border p-4 transition-colors" style={{ borderColor: "var(--border)", background: "var(--surface-elev)" }}>
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: s.alert ? "#FEE2E2" : "var(--accent-tint)", color: s.alert ? "#DC2626" : "var(--accent)" }}>
-                      <s.icon size={16} />
-                    </span>
-                    <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-2)" }}>{s.label}</p>
-                  </div>
-                  <p className={`tnum mt-3 truncate ${s.strong ? "text-lg font-bold" : "text-[15px] font-bold"}`}>{s.value}</p>
-                  {s.sub && <p className="mt-1 truncate text-xs" style={{ color: s.alert ? "#DC2626" : "var(--text-2)" }}>{s.sub}</p>}
+                <div key={s.label}>
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--text-2)" }}>{s.label}</dt>
+                  <dd className={`tnum mt-1.5 truncate ${s.strong ? "text-xl font-bold" : "text-[15px] font-bold"}`} style={s.alert ? { color: "#DC2626" } : undefined}>{s.value}</dd>
+                  {s.sub && <dd className="mt-0.5 truncate text-xs" style={{ color: s.alert ? "#DC2626" : "var(--text-2)" }}>{s.sub}</dd>}
                 </div>
               ))}
-            </div>
+            </dl>
 
             {gstPaymentByFiling.has(selectedFiling.id) && (
               <div className="rounded-2xl border p-4 sm:p-5" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
@@ -614,7 +604,7 @@ function StaffVersionHistory({ documentId, currentVersionNo }: { documentId: str
             <Badge tone={isCurrent ? "success" : "neutral"}>v{v.version_no}{isCurrent ? " · current" : ""}</Badge>
             <span className="min-w-0 flex-1 truncate font-medium">{v.file_name}</span>
             <span style={{ color: "var(--text-2)" }}>{(v.created_at ?? "").slice(0, 10)}</span>
-            <button className="font-bold text-[#2563EB] hover:underline"
+            <button className="font-bold text-[var(--accent)] hover:underline"
               onClick={() => downloadStoragePath(documentId, v.storage_path ?? (!/^https?:\/\//.test(v.file_url) ? v.file_url : null), v.file_name, v.file_url)}>
               Download
             </button>
@@ -801,7 +791,7 @@ function StaffDocumentsView({ role }: { role: "admin" | "employee" }) {
           <div className="flex flex-wrap gap-1.5">
             {[["all", "All"], ["pending", "Pending"], ["uploaded", "Uploaded"], ["received", "Accepted"], ["rejected", "Rejected"]].map(([v, label]) => (
               <button key={v} onClick={() => setStatusFilter(v)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${statusFilter === v ? "text-white" : ""}`}
-                style={statusFilter === v ? { background: "#2563EB" } : { border: "1px solid var(--border)" }}>{label}</button>
+                style={statusFilter === v ? { background: "var(--accent)" } : { border: "1px solid var(--border)" }}>{label}</button>
             ))}
           </div>
           <button onClick={() => setNewOnly((v) => !v)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${newOnly ? "text-white" : ""}`}
@@ -895,7 +885,7 @@ function StaffDocumentsView({ role }: { role: "admin" | "employee" }) {
 }
 
 // ---------- Messages (live Supabase, no mock data) ----------
-const AVATAR_COLORS = ["#2563EB", "#0D9488", "#7C3AED", "#DB2777", "#EA580C", "#16A34A"];
+const AVATAR_COLORS = ["var(--accent)", "#0284C7", "#7C3AED", "#DB2777", "#EA580C", "var(--accent-hover)"];
 
 function avatarColor(id: string): string {
   let h = 0;
@@ -1112,14 +1102,14 @@ export function MessagesView({ embedded = false }: { embedded?: boolean }) {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search conversations…"
                 aria-label="Search conversations"
-                className="w-full rounded-xl border py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20"
+                className="w-full rounded-xl border py-2.5 pl-9 pr-3 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 style={{ borderColor: "var(--border)", background: "var(--bg)" }}
               />
             </div>
             <button onClick={() => { mutate(); }} className="btn-ghost shrink-0 px-2.5" aria-label="Refresh conversations" title="Refresh">↻</button>
           </div>
           {embedded && (
-            <button onClick={() => setShowNew(true)} className="mb-2 w-full rounded-xl border border-dashed px-3 py-2.5 text-sm font-bold text-[#2563EB]" style={{ borderColor: "var(--border)" }}>
+            <button onClick={() => setShowNew(true)} className="mb-2 w-full rounded-xl border border-dashed px-3 py-2.5 text-sm font-bold text-[var(--accent)]" style={{ borderColor: "var(--border)" }}>
               + New message
             </button>
           )}
@@ -1163,7 +1153,7 @@ export function MessagesView({ embedded = false }: { embedded?: boolean }) {
                     {t.role && <span className="mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold capitalize" style={{ background: "var(--bg)", color: "var(--text-2)", border: "1px solid var(--border)" }}>{t.role}</span>}
                   </span>
                   {t.unread > 0 && (
-                    <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white" style={{ background: "#2563EB" }}>
+                    <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white" style={{ background: "var(--accent)" }}>
                       {t.unread}
                     </span>
                   )}
@@ -1221,12 +1211,12 @@ export function MessagesView({ embedded = false }: { embedded?: boolean }) {
                   )}
                   <div
                     className={`px-4 py-2.5 text-sm leading-relaxed ${mine ? "rounded-2xl rounded-br-md text-white" : "rounded-2xl rounded-bl-md border"}`}
-                    style={mine ? { background: "#2563EB" } : { background: "var(--bg)", borderColor: "var(--border)" }}
+                    style={mine ? { background: "var(--accent)" } : { background: "var(--bg)", borderColor: "var(--border)" }}
                   >
                     {m.body}
                   </div>
                   <p className={`mt-1 flex items-center gap-1 text-[11px] ${mine ? "justify-end" : ""}`} style={{ color: "var(--text-2)" }}>
-                    {fmtMsgTime(m.created_at)}{mine && <CheckCheck size={12} style={{ color: m.read_at ? "#16A34A" : "#2563EB" }} />}
+                    {fmtMsgTime(m.created_at)}{mine && <CheckCheck size={12} style={{ color: m.read_at ? "var(--accent-hover)" : "#93C5FD" }} />}
                   </p>
                 </div>
               </div>
@@ -1242,7 +1232,7 @@ export function MessagesView({ embedded = false }: { embedded?: boolean }) {
                 placeholder={canSend ? `Message ${chatName}…  (Enter to send)` : "Sign in to send messages"}
                 aria-label="Write a message"
                 disabled={!canSend || sending}
-                className="min-w-0 flex-1 rounded-xl border px-4 py-2.5 text-sm outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/20 disabled:opacity-50"
+                className="min-w-0 flex-1 rounded-xl border px-4 py-2.5 text-sm outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 disabled:opacity-50"
                 style={{ borderColor: "var(--border)", background: "var(--bg)" }}
               />
               <Button className="!rounded-xl px-5" disabled={!draft.trim() || !canSend || sending}>

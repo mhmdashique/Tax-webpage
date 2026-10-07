@@ -57,10 +57,10 @@ export const CLIENT_CATEGORIES = ["Bug/Issue", "Service Request", "Billing", "Fe
 
 // Spec badge colors: Open blue, In Progress orange, On Hold grey, Resolved green, Closed dark grey, Reopened purple
 export const STATUS_BADGE_STYLE: Record<string, { background: string; color: string }> = {
-  "Open": { background: "#DBEAFE", color: "#1D4ED8" },
+  "Open": { background: "var(--accent-tint)", color: "var(--accent-hover)" },
   "In Progress": { background: "#FFEDD5", color: "#C2410C" },
   "On Hold": { background: "#E5E7EB", color: "#4B5563" },
-  "Resolved": { background: "#DCFCE7", color: "#15803D" },
+  "Resolved": { background: "var(--accent-tint)", color: "var(--accent-hover)" },
   "Closed": { background: "#374151", color: "#F9FAFB" },
   "Reopened": { background: "#EDE9FE", color: "#6D28D9" },
 };

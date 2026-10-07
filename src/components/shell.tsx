@@ -2,11 +2,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import { createClient } from "@/lib/supabase/client";
 import { usePendingCount } from "./approvals";
 import { ThemeToggle, Modal, Badge } from "./ui";
 import { ClientMobileSidebar, ClientSidebar } from "./client-sidebar";
+import { EmployeeMobileSidebar, EmployeeSidebar } from "./employee-sidebar";
 import { useFilings, useTasks, usePayments, useMessages, useCurrentUser } from "@/lib/hooks";
 import { isOverdue } from "@/lib/lifecycle";
 import {
@@ -100,7 +101,7 @@ export function navFor(role: "admin" | "employee" | "client"): { menu: NavItem[]
 }
 
 const ROLE_CHIP: Record<string, string> = { admin: "ADMIN", employee: "EMPLOYEE", client: "CLIENT" };
-const ROLE_COLOR: Record<string, string> = { admin: "#4F46E5", employee: "#0D9488", client: "#2563EB" };
+const ROLE_COLOR: Record<string, string> = { admin: "var(--accent)", employee: "var(--accent)", client: "var(--accent)" };
 
 type Notice = { id: string; kind: string; title: string; body: string; href: string; urgent?: boolean };
 
@@ -118,10 +119,31 @@ function useNotices(role: "admin" | "employee" | "client"): Notice[] {
     const { data } = await sb.from("escalations").select("id,note").eq("status", "open").limit(5);
     return (data ?? []) as { id: string; note: string }[];
   });
+  const { data: taskNotifs = [] } = useSWR("task-notifications", async () => {
+    const sb = createClient();
+    if (!sb) return [];
+    const { data, error } = await sb.from("task_notifications")
+      .select("id,event_type,message,read_at,created_at").order("created_at", { ascending: false }).limit(20);
+    if (error) return [];
+    return (data ?? []) as { id: string; event_type: string; message: string; read_at: string | null; created_at?: string }[];
+  }, { refreshInterval: 15000 });
 
   return useMemo(() => {
     const out: Notice[] = [];
     const base = `/${role}`;
+    // Individual task assignment / review notifications first (unread first)
+    const sortedNotifs = [...taskNotifs].sort((a, b) => Number(Boolean(a.read_at)) - Number(Boolean(b.read_at)));
+    for (const n of sortedNotifs.slice(0, 10)) {
+      const label = String(n.event_type ?? "update").replace(/_/g, " ");
+      out.push({
+        id: `tasknotif-${n.id}`,
+        kind: "Tasks",
+        title: `${label.charAt(0).toUpperCase() + label.slice(1)}: ${(n.message ?? "").slice(0, 60)}${(n.message ?? "").length > 60 ? "…" : ""}`,
+        body: n.read_at ? `Read · ${n.message ?? ""}`.slice(0, 100) : (n.message ?? "Task update").slice(0, 100),
+        href: `${base}/tasks`,
+        urgent: !n.read_at,
+      });
+    }
     if (role === "admin" && pendingCount > 0)
       out.push({ id: "approvals", kind: "Approvals", title: `${pendingCount} pending approval${pendingCount === 1 ? "" : "s"}`, body: "Review new team / client requests.", href: "/admin/team", urgent: true });
     const overdue = filings.filter((f) => isOverdue(String(f.status), f.due_date));
@@ -139,13 +161,25 @@ function useNotices(role: "admin" | "employee" | "client"): Notice[] {
     if (role === "admin" && escalations.length > 0)
       out.push({ id: "escalations", kind: "Escalations", title: `${escalations.length} open escalation${escalations.length === 1 ? "" : "s"}`, body: String(escalations[0].note ?? "At-risk item flagged.").slice(0, 80), href: "/admin/escalations", urgent: true });
     return out;
-  }, [filings, tasks, payments, messages, meId, pendingCount, escalations, role]);
+  }, [filings, tasks, payments, messages, meId, pendingCount, escalations, taskNotifs, role]);
 }
 
 function NotificationsModal({ role, open, onClose }: { role: "admin" | "employee" | "client"; open: boolean; onClose: () => void }) {
   const router = useRouter();
+  const { mutate } = useSWRConfig();
   const notices = useNotices(role);
-  function view(n: Notice) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  async function view(n: Notice) {
+    if (n.id.startsWith("tasknotif-")) {
+      setBusyId(n.id);
+      try {
+        const sb = createClient();
+        if (sb) await sb.rpc("mark_task_notification_read", { p_notification: n.id.replace("tasknotif-", "") });
+        await mutate("task-notifications");
+      } catch { /* still redirect */ } finally {
+        setBusyId(null);
+      }
+    }
     onClose();
     router.push(n.href);
   }
@@ -165,8 +199,8 @@ function NotificationsModal({ role, open, onClose }: { role: "admin" | "employee
               </span>
               <span className="mt-0.5 block truncate text-xs" style={{ color: "var(--text-2)" }}>{n.body}</span>
             </span>
-            <button onClick={() => view(n)} className="shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-white" style={{ background: "#2563EB" }}>
-              View
+            <button onClick={() => view(n)} disabled={busyId === n.id} className="shrink-0 rounded-lg px-3 py-2 text-xs font-bold text-white disabled:opacity-50" style={{ background: "var(--accent)" }}>
+              {busyId === n.id ? "Opening…" : "View"}
             </button>
           </div>
         ))}
@@ -221,7 +255,7 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
           <span className="shrink-0">{item.icon}</span>
           {!collapsed && <span className="flex-1">{item.label}</span>}
           {!collapsed && item.badge ? (
-            <span className="inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: item.badgeTone === "red" ? "#DC2626" : "#2563EB" }}>
+            <span className="inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: item.badgeTone === "red" ? "#DC2626" : "var(--accent)" }}>
               {item.badge}
             </span>
           ) : null}
@@ -231,9 +265,19 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
 
   return (
     <div className="flex min-h-screen" style={{ background: "var(--bg)" }}>
-      {/* Sidebar desktop — new premium UI for client, legacy for admin/employee */}
+      {/* Sidebar desktop — premium grouped UI for client + employee, legacy for admin */}
       {role === "client" ? (
         <ClientSidebar
+          name={name}
+          pathname={pathname}
+          menuWithBadges={menuWithBadges}
+          support={support}
+          collapsed={collapsed}
+          onToggleCollapse={() => setCollapsed((c) => !c)}
+          onLogout={handleLogout}
+        />
+      ) : role === "employee" ? (
+        <EmployeeSidebar
           name={name}
           pathname={pathname}
           menuWithBadges={menuWithBadges}
@@ -269,13 +313,13 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
             <ThemeToggle />
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white" style={{ background: ROLE_COLOR[role], boxShadow: `0 0 0 2px ${ROLE_COLOR[role]}55` }}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white" style={{ background: ROLE_COLOR[role], boxShadow: "0 0 0 2px color-mix(in srgb, var(--accent) 33%, transparent)" }}>
               {name.slice(0, 1).toUpperCase()}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">{name}</p>
-                <span className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: `${ROLE_COLOR[role]}22`, color: ROLE_COLOR[role] }}>{ROLE_CHIP[role]}</span>
+                <span className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "color-mix(in srgb, var(--accent) 13%, transparent)", color: "var(--accent)" }}>{ROLE_CHIP[role]}</span>
               </div>
             )}
             {!collapsed && (
@@ -287,7 +331,7 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
       </aside>
       )}
 
-      {/* Mobile drawer — new premium UI for client */}
+      {/* Mobile drawer — premium UI for client + employee */}
       {mobileOpen && role === "client" && (
         <ClientMobileSidebar
           name={name}
@@ -298,7 +342,17 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
           onLogout={handleLogout}
         />
       )}
-      {mobileOpen && role !== "client" && (
+      {mobileOpen && role === "employee" && (
+        <EmployeeMobileSidebar
+          name={name}
+          pathname={pathname}
+          menuWithBadges={menuWithBadges}
+          support={support}
+          onClose={() => setMobileOpen(false)}
+          onLogout={handleLogout}
+        />
+      )}
+      {mobileOpen && role !== "client" && role !== "employee" && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 flex h-full w-72 flex-col p-4" style={{ background: "var(--sidebar-bg)" }}>
@@ -315,19 +369,50 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
         {/* Topbar */}
         <header className="glass-bar sticky top-0 z-30 flex h-16 items-center gap-3 px-4 md:px-8">
           <button className="btn-ghost p-2 md:hidden" onClick={() => setMobileOpen(true)} aria-label="Open menu"><Menu size={18} /></button>
-          <div className="hidden min-w-0 flex-1 items-center md:flex">
-            <div className="flex w-full max-w-md items-center gap-2 rounded-[10px] border px-3 py-2 text-sm" style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-2)" }}>
-              <span className="text-xs">⌘K</span>
-              <input placeholder="Search clients, filings, tasks… (Ctrl+K)" className="w-full bg-transparent outline-none" style={{ color: "var(--text)" }} id="global-search" />
-            </div>
-          </div>
+          <nav aria-label="Breadcrumb" className="hidden min-w-0 flex-1 items-center gap-1.5 text-sm sm:flex">
+            {(() => {
+              const segs = (pathname ?? "").split("/").filter(Boolean);
+              const base = segs[0] ?? role;
+              const rest = segs.slice(1);
+              const label = (s: string) => s.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+              return (
+                <>
+                  <Link href={`/${base}/dashboard`} className="shrink-0 font-bold hover:underline" style={{ color: "var(--text-2)" }}>TaxDesk</Link>
+                  {rest.length === 0 && (
+                    <>
+                      <span style={{ color: "var(--text-2)" }}>/</span>
+                      <span className="truncate font-bold" style={{ color: "var(--text)" }}>Dashboard</span>
+                    </>
+                  )}
+                  {rest.map((seg, i) => {
+                    const href = `/${base}/${rest.slice(0, i + 1).join("/")}`;
+                    const last = i === rest.length - 1;
+                    return (
+                      <span key={href} className="flex min-w-0 items-center gap-1.5">
+                        <span style={{ color: "var(--text-2)" }}>/</span>
+                        {last ? (
+                          <span className="truncate font-bold" style={{ color: "var(--text)" }}>{label(seg)}</span>
+                        ) : (
+                          <Link href={href} className="shrink-0 font-medium hover:underline" style={{ color: "var(--text-2)" }}>{label(seg)}</Link>
+                        )}
+                      </span>
+                    );
+                  })}
+                </>
+              );
+            })()}
+          </nav>
           <div className="ml-auto flex items-center gap-2">
-            <span className="hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold sm:inline-flex" style={{ background: `${ROLE_COLOR[role]}1f`, color: ROLE_COLOR[role] }}>
+            <div className="hidden min-w-0 items-center gap-2 rounded-[10px] border px-3 py-2 text-sm lg:flex" style={{ borderColor: "var(--border)", background: "var(--surface)", color: "var(--text-2)" }}>
+              <span className="text-xs">⌘K</span>
+              <input placeholder="Search…" className="w-full min-w-0 max-w-[160px] bg-transparent outline-none" style={{ color: "var(--text)" }} id="global-search" />
+            </div>
+            <span className="hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold sm:inline-flex" style={{ background: "#DCFCE7", color: "#16A34A" }}>
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: "#16A34A" }} />
                 <span className="relative inline-flex h-2 w-2 rounded-full" style={{ background: "#16A34A" }} />
               </span>
-              {ROLE_CHIP[role]} · Online
+              {role === "employee" ? "Online" : `${ROLE_CHIP[role]} · Online`}
             </span>
             <button
               className="btn-ghost relative p-2"
@@ -343,7 +428,15 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
               )}
             </button>
             <div className="hidden sm:block"><ThemeToggle /></div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white" style={{ background: ROLE_COLOR[role] }}>{name.slice(0, 1).toUpperCase()}</div>
+            <Link
+              href={role === "admin" ? "/admin/settings" : `/${role}/account`}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white transition-transform hover:scale-105"
+              style={{ background: ROLE_COLOR[role] }}
+              aria-label="Account & profile"
+              title="Account & profile"
+            >
+              {name.slice(0, 1).toUpperCase()}
+            </Link>
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1440px] flex-1 space-y-6 p-4 md:p-8" style={{ padding: 32 }}>

@@ -1,1 +1,1 @@
-﻿"use client"; import { PerformanceView } from "@/components/portals"; export default function P(){ return <PerformanceView role="employee"/>; }
+﻿"use client"; import { EmployeePerformancePremium } from "@/components/employee-premium"; export default function P(){ return <EmployeePerformancePremium/>; }

@@ -27,8 +27,7 @@ type TaskType = {
 
 type TaskDocument = { id: string; client_id: string; filing_id: string | null; file_name: string };
 type TaskAssigneeOption = { id: string; name: string; role: string };
-type TaskClientOption = { id: string; name: string; business_name: string | null };
-type TaskNotification = { id: string; event_type: string; message: string; read_at: string | null };
+type TaskClientOption = { id: string; name: string; business_name?: string | null };
 type TaskFor = "" | "employee" | "client";
 
 const taskStatuses = ["open", "in_progress", "done", "cancelled"];
@@ -256,41 +255,6 @@ export function TaskDetailsModal({
         {error && <p role="alert" className="text-sm text-[#DC2626]">{error}</p>}
       </div>
     </Modal>
-  );
-}
-
-function TaskNotifications() {
-  const sb = createClient();
-  const [error, setError] = useState("");
-  const { data = [], error: loadError, mutate } = useSWR<TaskNotification[]>("task-notifications", async () => {
-    if (!sb) return [];
-    const { data: rows, error } = await sb.from("task_notifications")
-      .select("id,event_type,message,read_at").order("created_at", { ascending: false }).limit(10);
-    if (error) throw error;
-    return (rows ?? []) as TaskNotification[];
-  });
-  if (!data.length && !loadError) return null;
-  return (
-    <Card className="space-y-2">
-      <h2 className="text-sm font-semibold">Task notifications</h2>
-      {loadError && <p role="alert" className="text-xs text-[#DC2626]">Could not load task notifications: {loadError.message}</p>}
-      {data.map((notification) => (
-        <div key={notification.id} className="flex items-start gap-3 rounded-lg p-2 text-xs" style={{ background: "var(--bg)" }}>
-          <div className="min-w-0 flex-1">
-            <Badge tone={notification.read_at ? "neutral" : "accent"}>{notification.event_type}</Badge>
-            <p className="mt-1">{notification.message}</p>
-          </div>
-          {!notification.read_at && <button className="font-semibold text-[#2563EB]" onClick={async () => {
-            if (!sb) return;
-            const { error } = await sb.rpc("mark_task_notification_read", { p_notification: notification.id });
-            if (error) { setError(error.message); return; }
-            setError("");
-            await mutate();
-          }}>Mark read</button>}
-        </div>
-      ))}
-      {error && <p role="alert" className="text-xs text-[#DC2626]">Could not update notification: {error}</p>}
-    </Card>
   );
 }
 
@@ -598,7 +562,7 @@ export function AddTaskButton({
                       setSaveUnassigned(false);
                     }}
                     className={`rounded-full px-4 py-2 text-sm font-semibold capitalize ${taskFor === audience ? "text-white" : ""}`}
-                    style={taskFor === audience ? { background: "#2563EB" } : { background: "var(--bg)", border: "1px solid var(--border)" }}>
+                    style={taskFor === audience ? { background: "var(--accent)" } : { background: "var(--bg)", border: "1px solid var(--border)" }}>
                     {audience} task
                   </button>
                 ))}
@@ -711,7 +675,7 @@ export function AddTaskButton({
                   emptyText={clientId && !clientUsersLoading && clientUserOptions.length === 0 ? "This client has no linked user." : undefined}
                   noOptionsHint={clientId && !clientUsersLoading && clientUserOptions.length === 0 && selectedClient ? (
                     <span>This client has no linked user. Link a user to the client first.{" "}
-                      <Link href="/admin/clients" className="font-semibold text-[#2563EB] hover:underline">Open client profile</Link>
+                      <Link href="/admin/clients" className="font-semibold text-[var(--accent)] hover:underline">Open client profile</Link>
                     </span>
                   ) : undefined}
                 />}
@@ -918,7 +882,7 @@ export function WaitingOnClientsCard() {
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="font-semibold">Waiting on clients ({waiting.length})</h2>
         {overdueCount > 0 && <Badge tone="danger">{overdueCount} overdue</Badge>}
-        <Link href="/employee/tasks" className="ml-auto text-xs font-bold text-[#2563EB] hover:underline">Open task center</Link>
+        <Link href="/employee/tasks" className="ml-auto text-xs font-bold text-[var(--accent)] hover:underline">Open task center</Link>
       </div>
       {message && <p role="status" className="mb-3 rounded-xl px-3 py-2 text-xs font-semibold" style={{ background: "var(--bg)" }}>{message}</p>}
       {waiting.length === 0 ? (
@@ -949,7 +913,7 @@ export function WaitingOnClientsCard() {
                       <Link href="/employee/tasks" className="btn-ghost rounded-[10px] px-3 py-1.5 text-xs font-bold">Open</Link>
                       {String(t.client_status) === "done_by_client" && (
                         <button onClick={() => void markReviewed(t.id)} disabled={busy === t.id}
-                          className="rounded-[10px] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50" style={{ background: "#2563EB" }}>
+                          className="rounded-[10px] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50" style={{ background: "var(--accent)" }}>
                           {busy === t.id ? "…" : "Mark reviewed"}
                         </button>
                       )}
@@ -1084,7 +1048,6 @@ export function TaskCenter({ role, readOnly = false }: { role: "admin" | "employ
   const waitingCount = data.filter((t) => t.task_for === "client" && t.follow_up_owner === currentUserId && !["done", "cancelled"].includes(String(t.status))).length;
   return (
     <div className="space-y-4">
-      <TaskNotifications />
       <div className="flex flex-wrap items-center gap-3">
         <div><h1 className="text-2xl font-bold">Task Center</h1><p className="text-sm" style={{ color: "var(--text-2)" }}>Create, assign, and track client work in one place.</p></div>
         {!readOnly && <AddTaskButton role={role} label="Add task" onCreated={(id, title, clientName, taskFor) => {
@@ -1106,7 +1069,7 @@ export function TaskCenter({ role, readOnly = false }: { role: "admin" | "employ
       <div className="flex flex-wrap items-center gap-2">
         {filters.filter((item) => role === "admin" || item !== "all").map((item) => <button key={item} onClick={() => setFilter(item)}
           className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${filter === item ? "text-white" : ""}`}
-          style={filter === item ? { background: "#2563EB" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>
+          style={filter === item ? { background: "var(--accent)" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>
           {filterLabels[item] ?? item}
           {item === "waiting" && waitingCount > 0 ? ` (${waitingCount})` : ""}
           <span className="ml-1 opacity-75">{item === "overdue" ? data.filter((task) => !["done", "cancelled"].includes(String(task.status)) && task.due_date && task.due_date < today).length : item === "today" ? data.filter((task) => task.due_date === today).length : ""}</span>
@@ -1115,7 +1078,7 @@ export function TaskCenter({ role, readOnly = false }: { role: "admin" | "employ
         {(["all", "employee", "client"] as const).map((a) => (
           <button key={a} onClick={() => setAudFilter(a)}
             className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${audFilter === a ? "text-white" : ""}`}
-            style={audFilter === a ? { background: "#0EA5A4" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>
+            style={audFilter === a ? { background: "var(--accent)" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>
             {a === "all" ? "All" : a === "employee" ? "Employee tasks" : "Client tasks"}
           </button>
         ))}
@@ -1130,7 +1093,7 @@ export function TaskCenter({ role, readOnly = false }: { role: "admin" | "employ
         <div className="w-[170px] shrink-0"><SearchSelect label="Type filter" hideLabel clearable={false} value={typeFilter} onChange={setTypeFilter} autoSelectSingle={false}
           options={[{ id: "all", label: "All task types" }, ...taskTypes.map((t) => ({ id: t.id, label: t.name }))]} placeholder="All task types" /></div>
         <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search tasks, clients, filings"
-          className="h-9 w-[200px] shrink-0 rounded-full border px-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]" style={{ background: "var(--surface)", borderColor: "var(--border)" }} />
+          className="h-9 w-[200px] shrink-0 rounded-full border px-3 text-xs outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]" style={{ background: "var(--surface)", borderColor: "var(--border)" }} />
       </div>
       {role === "admin" && !readOnly && selected.length > 0 && (
         <Card className="flex flex-wrap items-center gap-2 p-3">
@@ -1169,7 +1132,7 @@ export function TaskCenter({ role, readOnly = false }: { role: "admin" | "employ
                   return <tr key={task.id} className="border-b last:border-0" style={{ borderColor: "var(--border)" }}>
                     {role === "admin" && <td className="p-3"><input aria-label={`Select ${task.title}`} type="checkbox" checked={selected.includes(task.id)}
                       onChange={(event) => setSelected(event.target.checked ? [...selected, task.id] : selected.filter((id) => id !== task.id))} /></td>}
-                    <td className="p-3"><button onClick={() => setDetailTaskId(task.id)} className="text-left font-semibold text-[#2563EB] hover:underline">{task.title}</button><p className="text-xs" style={{ color: "var(--text-2)" }}>{task.notes ?? "Manual task"}</p></td>
+                    <td className="p-3"><button onClick={() => setDetailTaskId(task.id)} className="text-left font-semibold text-[var(--accent)] hover:underline">{task.title}</button><p className="text-xs" style={{ color: "var(--text-2)" }}>{task.notes ?? "Manual task"}</p></td>
                     <td className="p-3">{clientName}<span className="block text-xs" style={{ color: "var(--text-2)" }}>{filing ? `${filing.tax_type} · ${filing.period}` : ""}</span></td>
                     <td className="p-3 text-xs">{task.task_for === "client" ? (users.find((user) => user.id === task.assigned_to)?.name ?? "Unassigned") : "—"}</td>
                     <td className="p-3 text-xs">{task.task_for === "client" ? (users.find((user) => user.id === task.follow_up_owner)?.name ?? "Unassigned") : (users.find((user) => user.id === task.assigned_to)?.name ?? "Unassigned")}</td>

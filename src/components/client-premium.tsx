@@ -21,7 +21,7 @@ import { ClientTaskCenter, AccountView, HistoryView } from "./portals";
 /*  Premium design tokens                                              */
 /* ------------------------------------------------------------------ */
 
-const GREEN = "#2563EB";
+const GREEN = "var(--accent)";
 const GREEN_SOFT = "var(--accent-tint)";
 const BRASS = "#0284C7";
 const BRASS_SOFT = "#E0F2FE";
@@ -30,7 +30,7 @@ const SLATE = "var(--text-2)";
 const RED = "#DC2626";
 const AMBER = "#D97706";
 
-const CHART = ["#2563EB", "#38BDF8", "#F59E0B", "#34D399", "#93C5FD", "#F87171"];
+const CHART = ["var(--accent)", "#38BDF8", "#F59E0B", "var(--accent-hover)", "#93C5FD", "#F87171"];
 
 function cx(...parts: Array<string | false | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -45,7 +45,7 @@ export function PremiumHead({
 }: { eyebrow: string; title: string; sub: string; actions?: React.ReactNode }) {
   return (
     <div className="relative overflow-hidden rounded-2xl p-5 md:p-6" style={{ border: "1px solid var(--hero-border)", background: "var(--hero-bg)" }}>
-      <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full" style={{ background: "radial-gradient(closest-side,rgba(37,99,235,.14),transparent)" }} />
+      <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full" style={{ background: "radial-gradient(closest-side,color-mix(in srgb, var(--accent) 14%, transparent),transparent)" }} />
       <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-12 h-56 w-56 rounded-full" style={{ background: "radial-gradient(closest-side,rgba(56,189,248,.12),transparent)" }} />
       <div className="relative flex flex-wrap items-end gap-4">
         <div className="min-w-0 flex-1">
@@ -68,9 +68,9 @@ export function PremiumStat({
 }) {
   const tones: Record<string, { bg: string; fg: string }> = {
     green: { bg: "var(--accent-tint)", fg: "var(--accent)" },
-    brass: { bg: "#E0F2FE", fg: "#0369A1" },
-    red: { bg: "#FEF2F2", fg: "#DC2626" },
-    teal: { bg: "#ECFDF5", fg: "#059669" },
+    brass: { bg: "var(--accent-tint)", fg: "var(--accent)" },
+    red: { bg: "var(--danger-bg)", fg: "var(--danger-tx)" },
+    teal: { bg: "var(--accent-tint)", fg: "var(--accent)" },
   };
   const t = tones[tone];
   const max = Math.max(...(spark ?? [1]), 1);
@@ -90,7 +90,7 @@ export function PremiumStat({
         <div className="mt-3 flex items-end gap-1" aria-hidden>
           {spark.map((v, i) => (
             <span key={i} className="w-full rounded-full" style={{
-              height: `${6 + (v / max) * 26}px`, background: i === spark.length - 1 ? GREEN : `${GREEN}22`,
+              height: `${6 + (v / max) * 26}px`, background: i === spark.length - 1 ? GREEN : "color-mix(in srgb, var(--accent) 13%, transparent)",
             }} />
           ))}
         </div>
@@ -108,7 +108,7 @@ export function ScoreRing({ value, label }: { value: number; label: string }) {
       <div className="relative h-[132px] w-[132px] shrink-0">
         <svg viewBox="0 0 132 132" className="h-full w-full -rotate-90">
           <circle cx="66" cy="66" r={r} fill="none" strokeWidth="12" style={{ stroke: "var(--hero-track)" }} />
-          <circle cx="66" cy="66" r={r} fill="none" stroke="#2563EB" strokeWidth="12" strokeLinecap="round"
+          <circle cx="66" cy="66" r={r} fill="none" stroke="var(--accent)" strokeWidth="12" strokeLinecap="round"
             strokeDasharray={c} strokeDashoffset={c - (c * v) / 100} style={{ transition: "stroke-dashoffset .8s ease" }} />
         </svg>
         <div className="absolute inset-0 flex rotate-0 flex-col items-center justify-center" style={{ color: "var(--text)" }}>
@@ -121,7 +121,7 @@ export function ScoreRing({ value, label }: { value: number; label: string }) {
         <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--text-2)" }}>
           {v >= 85 ? "Excellent — everything is filed, paid and up to date." : v >= 60 ? "Good — finish the open items to reach fully compliant." : "Needs attention — a few filings or payments are overdue."}
         </p>
-        <Link href="/client/tax-filings" className="mt-2 inline-flex items-center gap-1 text-xs font-bold hover:underline" style={{ color: "#2563EB" }}>
+        <Link href="/client/tax-filings" className="mt-2 inline-flex items-center gap-1 text-xs font-bold hover:underline" style={{ color: "var(--accent)" }}>
           Review filings <ArrowRight size={13} />
         </Link>
       </div>
@@ -250,7 +250,7 @@ export function ClientDashboardPremium() {
     <div className="client-enter space-y-5">
       {/* HERO — light */}
       <section className="relative overflow-hidden rounded-2xl p-6 md:p-8" style={{ background: "var(--hero-bg)", border: "1px solid var(--hero-border)", color: "var(--hero-text)" }}>
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full" style={{ background: "radial-gradient(closest-side,rgba(37,99,235,.10),transparent)" }} />
+        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full" style={{ background: "radial-gradient(closest-side,color-mix(in srgb, var(--accent) 10%, transparent),transparent)" }} />
         <div className="relative grid items-center gap-6 lg:grid-cols-[1.4fr_.9fr]">
           <div>
             <p className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em]" style={{ background: "var(--hero-chip-bg)", color: "var(--hero-chip-tx)" }}>
@@ -268,10 +268,10 @@ export function ClientDashboardPremium() {
               <Link href="/client/documents" className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5" style={{ background: GREEN }}>
                 <Upload size={15} /> Upload documents
               </Link>
-              <Link href="/client/payments" className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors hover:bg-slate-50" style={{ borderColor: "#BFDBFE", color: GREEN }}>
+              <Link href="/client/payments" className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors hover:bg-[var(--surface-muted)]" style={{ borderColor: "var(--border)", color: GREEN }}>
                 <Wallet size={15} /> Pay invoice
               </Link>
-              <Link href="/client/messages" className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors hover:bg-slate-50" style={{ borderColor: "#BFDBFE", color: GREEN }}>
+              <Link href="/client/messages" className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors hover:bg-[var(--surface-muted)]" style={{ borderColor: "var(--border)", color: GREEN }}>
                 <MessagesSquare size={15} /> Message accountant
               </Link>
             </div>
@@ -437,7 +437,7 @@ export function ClientDashboardPremium() {
                   <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 11, fill: SLATE }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={(v: unknown) => formatMoney(Number(v))} />
                   <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={18}>
-                    {f.payBars.map((_, i) => <Cell key={i} fill={i === 0 ? GREEN : i === 1 ? BRASS : "#7FB69E"} />)}
+                    {f.payBars.map((_, i) => <Cell key={i} fill={i === 0 ? GREEN : i === 1 ? BRASS : "#38BDF8"} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -836,12 +836,12 @@ export function ClientContactPremium() {
     >
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl p-6 md:col-span-2" style={{ border: "1px solid var(--hero-border)", background: "var(--hero-bg)" }}>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: "#2563EB" }}>Your firm</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--accent)" }}>Your firm</p>
           <h2 className="mt-1 text-2xl font-bold" style={{ fontFamily: "var(--font-fraunces),Georgia,serif", color: "var(--hero-text)" }}>{(f.myClient as { business_name?: string } | null)?.business_name ?? "Your accountant is online"}</h2>
           <p className="mt-2 max-w-lg text-sm" style={{ color: "var(--text-2)" }}>Open filings: {f.openFilings.length} · open tasks: {f.open.length} · outstanding: {formatMoney(f.outstanding)}. Include your filing period in the first line for the fastest reply.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link href="/client/messages" className="rounded-lg px-4 py-2.5 text-sm font-bold text-white" style={{ background: GREEN }}><MessagesSquare size={14} className="mr-1 inline" /> Open messages</Link>
-            <Link href="/client/tasks" className="rounded-lg border px-4 py-2.5 text-sm font-bold" style={{ borderColor: "#BFDBFE", color: GREEN }}>View my tasks</Link>
+            <Link href="/client/tasks" className="rounded-lg border px-4 py-2.5 text-sm font-bold" style={{ borderColor: "var(--border)", color: GREEN }}>View my tasks</Link>
           </div>
         </div>
         <div className="rounded-2xl p-5" style={{ border: "1px solid var(--border)", background: "var(--surface)" }}>

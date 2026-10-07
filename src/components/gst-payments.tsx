@@ -135,7 +135,7 @@ function GstNotificationFeed() {
           <strong className="block">{notification.event_type.replace(/_/g, " ")}</strong>
           <span>{notification.message}</span>
         </div>
-        {!notification.read_at && <button className="shrink-0 font-semibold text-[#2563EB]"
+        {!notification.read_at && <button className="shrink-0 font-semibold text-[var(--accent)]"
           onClick={async () => {
             if (!sb) return;
             const { error: markError } = await sb.rpc("mark_gst_notification_read", { p_notification_id: notification.id });
@@ -318,7 +318,7 @@ export function GstPaymentsPanel({ role, filingId, riskOnly = false }: { role: s
         {!filingId && !riskOnly && <div className="flex flex-wrap gap-1">
           {statuses.map((status) => <button key={status} onClick={() => setFilter(status)}
             className={`rounded-full px-3 py-1.5 text-xs font-semibold ${filter === status ? "text-white" : ""}`}
-            style={filter === status ? { background: "#2563EB" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>
+            style={filter === status ? { background: "var(--accent)" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>
             {status === "all" ? "All" : status.replace(/_/g, " ")}
           </button>)}
         </div>}
@@ -386,15 +386,15 @@ export function GstPaymentsPanel({ role, filingId, riskOnly = false }: { role: s
               <div className="flex flex-wrap gap-2 text-xs">
                 <span className="font-semibold">Client challan proofs:</span>
                 {row.proofs.map((proof) => <span key={proof.id} className="flex items-center gap-2">
-                  <button className="text-[#2563EB] underline" onClick={() => viewProof(proof.proof_path)}>View uploaded proof</button>
+                  <button className="text-[var(--accent)] underline" onClick={() => viewProof(proof.proof_path)}>View uploaded proof</button>
                   <Badge tone={proof.verified_at ? "success" : "warning"}>{proof.verified_at ? "verified" : "awaiting verification"}</Badge>
                   {role !== "client" && !proof.verified_at && <button disabled={busy === row.id}
-                    className="font-semibold text-[#2563EB] underline" onClick={() => verifyProof(row, proof.id)}>Verify challan</button>}
+                    className="font-semibold text-[var(--accent)] underline" onClick={() => verifyProof(row, proof.id)}>Verify challan</button>}
                 </span>)}
               </div>
             )}
             {role === "client" ? (
-              <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-[#2563EB]">
+              <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-[var(--accent)]">
                 <input type="file" accept=".pdf,.png,.jpg,.jpeg" className="max-w-[230px] text-xs"
                   disabled={busy === row.id} onChange={(e) => uploadProof(e, row)} />
                 Upload challan proof (staff verification required)

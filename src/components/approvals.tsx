@@ -101,7 +101,7 @@ function Avatar({ name }: { name: string }) {
   return (
     <span
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-      style={{ background: "#2563EB" }}
+      style={{ background: "var(--accent)" }}
     >
       {name.slice(0, 1).toUpperCase()}
     </span>
@@ -188,7 +188,7 @@ export function ApprovalActionButtons({
           onClick={approve}
           disabled={busy !== null}
           className="rounded-[10px] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-          style={{ background: "#2563EB" }}
+          style={{ background: "var(--accent)" }}
         >
           {busy === "approve" ? "Accepting…" : "Accept"}
         </button>
@@ -430,7 +430,7 @@ export function ApprovalManager({ compact = false }: { compact?: boolean }) {
             key={s}
             onClick={() => setTab(s)}
             className={`rounded-full px-4 py-1.5 text-xs font-bold capitalize ${tab === s ? "text-white" : ""}`}
-            style={tab === s ? { background: "#2563EB" } : { border: "1px solid var(--border)" }}
+            style={tab === s ? { background: "var(--accent)" } : { border: "1px solid var(--border)" }}
           >
             {s}
           </button>
@@ -486,7 +486,7 @@ export function ApprovalManager({ compact = false }: { compact?: boolean }) {
             onClick={diagnose}
             disabled={diagLoading || !diagEmail.trim()}
             className="rounded-[10px] px-4 py-1.5 text-xs font-bold text-white disabled:opacity-50"
-            style={{ background: "#2563EB" }}
+            style={{ background: "var(--accent)" }}
           >
             {diagLoading ? "Checking…" : "Diagnose"}
           </button>
@@ -530,7 +530,7 @@ export function ApprovalCountBadge() {
   return (
     <span
       className="inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-[11px] font-bold text-white"
-      style={{ background: "#2563EB" }}
+      style={{ background: "var(--accent)" }}
       aria-label={`${data.length} pending requests`}
     >
       {data.length}
@@ -552,7 +552,7 @@ export function PendingApprovalsCard() {
       <div className="mb-3 flex items-center gap-2">
         <h2 className="font-semibold">Pending approvals</h2>
         <ApprovalCountBadge />
-        <Link href="/admin/team" className="ml-auto text-xs font-bold text-[#2563EB] hover:underline">
+        <Link href="/admin/team" className="ml-auto text-xs font-bold text-[var(--accent)] hover:underline">
           Open Team page →
         </Link>
       </div>
@@ -572,7 +572,7 @@ export function PendingApprovalsCard() {
           ))}
           {data.length > 5 && (
             <p className="text-center text-xs" style={{ color: "var(--text-2)" }}>
-              +{data.length - 5} more — <Link href="/admin/team" className="font-bold text-[#2563EB] hover:underline">view all</Link>
+              +{data.length - 5} more — <Link href="/admin/team" className="font-bold text-[var(--accent)] hover:underline">view all</Link>
             </p>
           )}
         </div>

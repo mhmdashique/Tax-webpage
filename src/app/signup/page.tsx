@@ -297,7 +297,7 @@ export default function SignupPage() {
                   </div>
                   <div className="mt-2 flex gap-1.5" aria-hidden>
                     {[6, 10, 14].map((len) => (
-                      <span key={len} className="h-1 flex-1 rounded-full transition-colors" style={{ background: password.length >= len ? "#16A34A" : "var(--border)" }} />
+                      <span key={len} className="h-1 flex-1 rounded-full transition-colors" style={{ background: password.length >= len ? "#2563EB" : "var(--border)" }} />
                     ))}
                   </div>
                 </div>

@@ -51,7 +51,7 @@ export function ReportsView() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Completion rate" value={`${rate}%`} icon={<ScrollText size={18} />} spark={<Sparkline points={[40, 55, 60, 72, rate || 10]} />} />
         <StatCard label="At risk / overdue" value={String(overdue)} icon={<Download size={18} />} spark={<Sparkline points={[5, 4, 6, 3, overdue]} color="#DC2626" />} />
-        <StatCard label="Revenue (paid)" value={formatMoney(revenue)} icon={<CreditCard size={18} />} spark={<Sparkline points={[2, 4, 3, 6, 8]} color="#16A34A" />} />
+        <StatCard label="Revenue (paid)" value={formatMoney(revenue)} icon={<CreditCard size={18} />} spark={<Sparkline points={[2, 4, 3, 6, 8]} color="var(--accent)" />} />
         <StatCard label="Tasks done" value={String(tasks.filter((t) => String(t.status) === "done").length)} icon={<Plus size={18} />} />
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
@@ -59,12 +59,12 @@ export function ReportsView() {
           <h2 className="mb-2 text-base font-semibold">Completed vs Overdue (6 mo)</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trend}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="m" fontSize={11} />
-                <YAxis fontSize={11} allowDecimals={false} />
-                <Tooltip contentStyle={{ borderRadius: 12, fontSize: 12 }} />
-                <Bar dataKey="done" fill="#2563EB" radius={[6, 6, 0, 0]} name="Completed" />
+              <BarChart data={trend} margin={{ top: 8, right: 8, left: -14, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="m" tick={{ fontSize: 11, fill: "var(--text-2)" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "var(--text-2)" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={{ background: "var(--surface-elev)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }} cursor={{ fill: "transparent" }} />
+                <Bar dataKey="done" fill="var(--accent)" radius={[6, 6, 0, 0]} name="Completed" />
                 <Bar dataKey="overdue" fill="#DC2626" radius={[6, 6, 0, 0]} name="Overdue" />
               </BarChart>
             </ResponsiveContainer>
@@ -77,9 +77,9 @@ export function ReportsView() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={byType} dataKey="value" nameKey="name" outerRadius={90} label>
-                    {byType.map((_, i) => <Cell key={i} fill={["#2563EB", "#DC2626", "#16A34A", "#D97706", "#7C3AED"][i % 5]} />)}
+                    {byType.map((_, i) => <Cell key={i} fill={["var(--accent)", "#DC2626", "var(--accent-hover)", "#D97706", "#7C3AED"][i % 5]} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ background: "var(--surface-elev)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -135,7 +135,7 @@ export function SettingsView() {
       <div className="flex flex-wrap gap-2">
         {tabs.map((t) => (
           <button key={t.k} onClick={() => setTab(t.k)} className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${tab === t.k ? "text-white" : ""}`}
-            style={tab === t.k ? { background: "#2563EB" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>{t.icon}{t.label}</button>
+            style={tab === t.k ? { background: "var(--accent)" } : { background: "var(--surface)", border: "1px solid var(--border)" }}>{t.icon}{t.label}</button>
         ))}
       </div>
 
@@ -208,7 +208,7 @@ export function SettingsView() {
       {tab === "integrations" && (
         <div className="grid gap-3 md:grid-cols-3">
           {["Xero", "QuickBooks", "Stripe", "Slack", "Google Drive", "DocuSign"].map((n) => (
-            <Card key={n} className="flex items-center gap-3"><Plug size={18} color="#2563EB" /><span className="text-sm font-semibold">{n}</span><button className="btn-ghost ml-auto px-3 py-1.5 text-xs" onClick={() => flash(`${n} connect flow stubbed for v1`)}>Connect</button></Card>
+            <Card key={n} className="flex items-center gap-3"><Plug size={18} color="var(--accent)" /><span className="text-sm font-semibold">{n}</span><button className="btn-ghost ml-auto px-3 py-1.5 text-xs" onClick={() => flash(`${n} connect flow stubbed for v1`)}>Connect</button></Card>
           ))}
         </div>
       )}

@@ -336,10 +336,23 @@ body {
   outline-offset: 2px;
 }
 
+/* Employee scope needs the same section-title + enter styles the client scope has
+   (the dashboard markup shares those class names). */
+.theme-employee .client-section-title {
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+
 /* Light page-enter fade (opt-in per page in Phase 3). */
 @media (prefers-reduced-motion: no-preference) {
   .client-theme .client-enter {
     animation: client-fade 200ms var(--ease-out);
+  }
+  .theme-employee .client-enter {
+    animation: client-fade 200ms cubic-bezier(0.22, 1, 0.36, 1);
   }
   @keyframes client-fade {
     from { opacity: 0; }
@@ -428,15 +441,19 @@ body {
 
 /* ---------- Unified premium workspace (admin / employee / client) ---------- */
 .theme-admin { --bg: #F5F6FA; --surface-muted: #EEEDFE; --sidebar-bg: #FBFAFF; }
-.theme-admin .nav-item.active { background: #4F46E5; box-shadow: 0 4px 14px rgba(79,70,229,.35); }
-.theme-admin .nav-item:hover { background: #4F46E514; color: #4F46E5; }
-.theme-admin .btn-primary { background: #4F46E5; }
-.theme-admin .btn-primary:hover { background: #4338CA; box-shadow: 0 8px 20px rgba(79,70,229,.3); }
-.theme-employee { --bg: #F2FAF8; --surface-muted: #DDF5F1; --sidebar-bg: #FAFEFD; }
-.theme-employee .nav-item.active { background: #0D9488; box-shadow: 0 4px 14px rgba(13,148,136,.35); }
-.theme-employee .nav-item:hover { background: #0D948814; color: #0D9488; }
-.theme-employee .btn-primary { background: #0D9488; }
-.theme-employee .btn-primary:hover { background: #0B7E74; box-shadow: 0 8px 20px rgba(13,148,136,.3); }
+.theme-admin .nav-item.active { background: var(--accent); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent); }
+.theme-admin .nav-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); }
+.theme-admin .btn-primary { background: var(--accent); }
+.theme-admin .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 30%, transparent); }
+.theme-employee { --bg: #EFF4FE; --surface: #FFFFFF; --surface-muted: #E3ECFD; --sidebar-bg: #EFF4FE; --border: #C9D8F5;
+  --glass: rgba(239,244,254,.85);
+  --hero-bg: linear-gradient(180deg,#FFFFFF 0%,#EFF6FF 100%); --hero-border: #BFDBFE;
+  --hero-text: #0F172A; --hero-sub: #475569; --hero-chip-bg: var(--accent-tint); --hero-chip-tx: var(--accent-hover);
+  --hero-card-bg: #FFFFFF; }
+.theme-employee .nav-item.active { background: var(--accent); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent); }
+.theme-employee .nav-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); }
+.theme-employee .btn-primary { background: var(--accent); }
+.theme-employee .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 30%, transparent); }
 .prem-title { font-family: var(--font-fraunces), Georgia, serif; font-size: 28px; line-height: 1.2; letter-spacing: -0.01em; font-weight: 600; }
 .prem-section { font-family: var(--font-inter), Inter, system-ui, sans-serif; font-size: 15px; line-height: 1.4; font-weight: 700; letter-spacing: -0.005em; }
 .prem-enter { animation: prem-fade 220ms cubic-bezier(.22,1,.36,1); }
@@ -458,8 +475,8 @@ body {
   --hero-border: #DBEAFE;
   --hero-text: #0F172A;
   --hero-sub: #475569;
-  --hero-chip-bg: #DBEAFE;
-  --hero-chip-tx: #1D4ED8;
+  --hero-chip-bg: var(--accent-tint);
+  --hero-chip-tx: var(--accent-hover);
   --hero-card-bg: #FFFFFF;
   --hero-track: #DBEAFE;
   --row-bg: #FFFFFF;
@@ -493,35 +510,72 @@ body {
 }
 /* Dark mirrors for role themes (admin / employee shells). */
 .dark .theme-admin { --bg: #05080F; --surface-muted: #141432; --sidebar-bg: #070B14; }
-.dark .theme-employee { --bg: #04100E; --surface-muted: #0B2623; --sidebar-bg: #060F0D; }
+/* New midnight-blue dark theme for the full employee workspace. */
+.dark .theme-employee {
+  --bg: #060C18;
+  --surface: #0C1526;
+  --surface-muted: #13233B;
+  --surface-elev: #101E33;
+  --sidebar-bg: #080F1E;
+  --border: rgba(148,163,184,.14);
+  --text: #EAF0F8;
+  --text-2: #8FA1B8;
+  --glass: rgba(6,12,24,.78);
+  --shadow-card: 0 14px 44px rgba(0,0,0,.5), inset 0 1px 0 rgba(148,163,184,.08);
+  --hero-bg: linear-gradient(180deg,#0C1A33 0%,#0C2C5E 130%);
+  --hero-border: rgba(96,165,250,.22);
+  --hero-text: #F1F5F9;
+  --hero-sub: #93A3BC;
+  --hero-chip-bg: rgba(96,165,250,.16);
+  --hero-chip-tx: #93C5FD;
+  --hero-card-bg: #0C1626;
+  color-scheme: dark;
+}
+.dark .theme-employee .workspace-body {
+  background:
+    radial-gradient(900px 320px at 12% 0%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 60%),
+    radial-gradient(720px 300px at 88% 6%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    radial-gradient(640px 420px at 50% 108%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 65%),
+    linear-gradient(180deg, #081226 0%, #060C18 42%, var(--bg) 85%);
+}
+.dark .theme-employee .workspace-body .glass-bar {
+  background: rgba(6,12,24,.66);
+}
+.dark .theme-employee .nav-item:hover {
+  background: rgba(96,165,250,.12);
+  color: #93C5FD;
+}
+.dark .theme-employee .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(148,163,184,.18), transparent);
+}
 .client-theme .nav-item.active {
-  background: #2563EB;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  background: var(--accent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 30%, transparent);
 }
 .client-theme .nav-item:hover {
-  background: #EFF6FF;
-  color: #1D4ED8;
+  background: var(--accent-tint);
+  color: var(--accent-hover);
 }
 .dark .client-theme .nav-item:hover {
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
 }
 .client-theme .btn-primary {
-  background: #2563EB;
+  background: var(--accent);
 }
 .client-theme .btn-primary:hover {
-  background: #1D4ED8;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.28);
+  background: var(--accent-hover);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 28%, transparent);
 }
 .client-theme .glass-bar {
   border-bottom: 1px solid var(--border);
 }
 /* Client minimalist sidebar: light premium look, blue active pill. */
 .client-side-light .client-nav { transition: background 180ms ease-out, color 180ms ease-out; }
-.client-side-light .client-nav:hover { background: #EFF6FF; color: #1D4ED8; }
-.client-side-light .client-nav.active:hover { background: #1D4ED8; color: #fff; }
+.client-side-light .client-nav:hover { background: var(--accent-tint); color: var(--accent-hover); }
+.client-side-light .client-nav.active:hover { background: var(--accent-hover); color: #fff; }
 .dark .client-side-light .client-nav:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
-.client-side-light .client-nav:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; }
+.client-side-light .client-nav:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @keyframes client-drawer { from { transform: translateX(-16px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .client-side aside { animation: none !important; }
@@ -537,28 +591,42 @@ body {
   letter-spacing: -0.005em;
 }
 .premium-embed .btn-primary {
-  background: #2563EB;
+  background: var(--accent);
 }
 .premium-embed .recharts-wrapper :focus {
   outline: none;
+}
+/* Employee premium embeds — blue buttons, scoped to employee only. */
+.theme-employee .employee-embed .btn-primary {
+  background: var(--accent);
+}
+.theme-employee .employee-embed .btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+.theme-employee .employee-embed h1 {
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
 }
 
 /* ---------- Workspace body gradient (body only, sidebar untouched) ---------- */
 .workspace-body {
   background:
-    radial-gradient(900px 320px at 15% 0%, rgba(37, 99, 235, 0.12), transparent 60%),
-    radial-gradient(700px 300px at 90% 8%, rgba(96, 165, 250, 0.14), transparent 60%),
-    radial-gradient(600px 400px at 50% 100%, rgba(37, 99, 235, 0.06), transparent 65%),
-    linear-gradient(180deg, #EAF2FF 0%, #F2F7FF 28%, var(--bg) 72%);
+    radial-gradient(900px 320px at 15% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    radial-gradient(700px 300px at 90% 8%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 60%),
+    radial-gradient(600px 400px at 50% 100%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 65%),
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, #FFFFFF) 0%, color-mix(in srgb, var(--accent) 5%, #F8FAFC) 28%, var(--bg) 72%);
 }
 .workspace-body .glass-bar {
   background: rgba(255, 255, 255, 0.72);
 }
 .dark .workspace-body {
   background:
-    radial-gradient(900px 320px at 15% 0%, rgba(59, 130, 246, 0.22), transparent 60%),
-    radial-gradient(700px 300px at 90% 8%, rgba(96, 165, 250, 0.16), transparent 60%),
-    linear-gradient(180deg, #0A1633 0%, #0B1120 38%, var(--bg) 80%);
+    radial-gradient(900px 320px at 15% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
+    radial-gradient(700px 300px at 90% 8%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, #0B1120) 0%, #0B1120 38%, var(--bg) 80%);
 }
 .dark .workspace-body .glass-bar {
   background: rgba(5, 8, 15, 0.6);
