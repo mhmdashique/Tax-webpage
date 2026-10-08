@@ -251,9 +251,10 @@ body {
   --primary: #0F3D33;
   --primary-hover: #0B2E27;
   --primary-tint: #E2ECE6;
-  --accent: #B8893B;
-  --accent-hover: #99702C;
-  --accent-tint: #F3EAD3;
+  /* NOTE: --accent / --accent-hover / --accent-tint are intentionally NOT set
+     here — they come from the user's dashboard-color choice (ThemeProvider
+     writes them to <html>). Defining them on this wrapper would override the
+     picker for the whole client dashboard. */
   --success: #1F7A4D;
   --success-bg: #E1EFE6;
   --success-tx: #175C3A;
@@ -286,9 +287,7 @@ body {
   --primary: #2E7D5B;
   --primary-hover: #3A9070;
   --primary-tint: #1D3229;
-  --accent: #C9A15A;
-  --accent-hover: #D9B96F;
-  --accent-tint: #2E2A1C;
+  /* NOTE: no --accent* here either — see above, the picker owns those. */
   --success: #3AA76D;
   --success-bg: #152A1F;
   --success-tx: #7BD8A4;
@@ -440,14 +439,19 @@ body {
 }
 
 /* ---------- Unified premium workspace (admin / employee / client) ---------- */
-.theme-admin { --bg: #F5F6FA; --surface-muted: #EEEDFE; --sidebar-bg: #FBFAFF; }
+.theme-admin { --bg: #F5F6FA; --surface-muted: #EEEDFE; --sidebar-bg: #FBFAFF;
+  /* Hero tokens — identical to .theme-employee / .client-theme so every
+     admin page hero renders the same light wash as employee + client. */
+  --hero-bg: linear-gradient(180deg,#FFFFFF 0%,color-mix(in srgb, var(--accent-tint) 55%, #FFFFFF) 100%); --hero-border: var(--accent-tint);
+  --hero-text: #0F172A; --hero-sub: #475569; --hero-chip-bg: var(--accent-tint); --hero-chip-tx: var(--accent-hover);
+  --hero-card-bg: #FFFFFF; }
 .theme-admin .nav-item.active { background: var(--accent); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent); }
 .theme-admin .nav-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); }
 .theme-admin .btn-primary { background: var(--accent); }
 .theme-admin .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 30%, transparent); }
 .theme-employee { --bg: #EFF4FE; --surface: #FFFFFF; --surface-muted: #E3ECFD; --sidebar-bg: #EFF4FE; --border: #C9D8F5;
   --glass: rgba(239,244,254,.85);
-  --hero-bg: linear-gradient(180deg,#FFFFFF 0%,#EFF6FF 100%); --hero-border: #BFDBFE;
+  --hero-bg: linear-gradient(180deg,#FFFFFF 0%,color-mix(in srgb, var(--accent-tint) 55%, #FFFFFF) 100%); --hero-border: var(--accent-tint);
   --hero-text: #0F172A; --hero-sub: #475569; --hero-chip-bg: var(--accent-tint); --hero-chip-tx: var(--accent-hover);
   --hero-card-bg: #FFFFFF; }
 .theme-employee .nav-item.active { background: var(--accent); box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 35%, transparent); }
@@ -471,14 +475,14 @@ body {
   --glass: rgba(255, 255, 255, 0.85);
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
   /* Hero tokens: light default, dark overrides below. */
-  --hero-bg: linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%);
-  --hero-border: #DBEAFE;
+  --hero-bg: linear-gradient(180deg, #FFFFFF 0%, color-mix(in srgb, var(--accent-tint) 55%, #FFFFFF) 100%);
+  --hero-border: var(--accent-tint);
   --hero-text: #0F172A;
   --hero-sub: #475569;
   --hero-chip-bg: var(--accent-tint);
   --hero-chip-tx: var(--accent-hover);
   --hero-card-bg: #FFFFFF;
-  --hero-track: #DBEAFE;
+  --hero-track: var(--accent-tint);
   --row-bg: #FFFFFF;
   --row-border: #E2E8F0;
   --row-hover: rgba(15, 23, 42, 0.02);
@@ -496,12 +500,12 @@ body {
   --sidebar-bg: #070B14;
   --glass: rgba(5, 8, 15, 0.72);
   --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --hero-bg: linear-gradient(180deg, #0B1120 0%, #0E1E3E 100%);
-  --hero-border: rgba(148, 163, 184, 0.22);
+  --hero-bg: linear-gradient(180deg, #0B1120 0%, color-mix(in srgb, var(--accent) 20%, #0B1120) 100%);
+  --hero-border: color-mix(in srgb, var(--accent) 22%, transparent);
   --hero-text: #F1F5F9;
   --hero-sub: #94A3B8;
-  --hero-chip-bg: rgba(96, 165, 250, 0.16);
-  --hero-chip-tx: #93C5FD;
+  --hero-chip-bg: color-mix(in srgb, var(--accent) 16%, transparent);
+  --hero-chip-tx: color-mix(in srgb, var(--accent) 65%, white);
   --hero-card-bg: #0B1120;
   --hero-track: rgba(148, 163, 184, 0.25);
   --row-bg: #0B1120;
@@ -509,7 +513,14 @@ body {
   --row-hover: rgba(255, 255, 255, 0.04);
 }
 /* Dark mirrors for role themes (admin / employee shells). */
-.dark .theme-admin { --bg: #05080F; --surface-muted: #141432; --sidebar-bg: #070B14; }
+.dark .theme-admin { --bg: #05080F; --surface-muted: #141432; --sidebar-bg: #070B14;
+  --hero-bg: linear-gradient(180deg,#0C1626 0%,color-mix(in srgb, var(--accent) 22%, #0C1626) 130%);
+  --hero-border: color-mix(in srgb, var(--accent) 22%, transparent);
+  --hero-text: #F1F5F9;
+  --hero-sub: #93A3BC;
+  --hero-chip-bg: color-mix(in srgb, var(--accent) 16%, transparent);
+  --hero-chip-tx: color-mix(in srgb, var(--accent) 65%, white);
+  --hero-card-bg: #0C1626; }
 /* New midnight-blue dark theme for the full employee workspace. */
 .dark .theme-employee {
   --bg: #060C18;
@@ -522,12 +533,12 @@ body {
   --text-2: #8FA1B8;
   --glass: rgba(6,12,24,.78);
   --shadow-card: 0 14px 44px rgba(0,0,0,.5), inset 0 1px 0 rgba(148,163,184,.08);
-  --hero-bg: linear-gradient(180deg,#0C1A33 0%,#0C2C5E 130%);
-  --hero-border: rgba(96,165,250,.22);
+  --hero-bg: linear-gradient(180deg,#0C1626 0%,color-mix(in srgb, var(--accent) 22%, #0C1626) 130%);
+  --hero-border: color-mix(in srgb, var(--accent) 22%, transparent);
   --hero-text: #F1F5F9;
   --hero-sub: #93A3BC;
-  --hero-chip-bg: rgba(96,165,250,.16);
-  --hero-chip-tx: #93C5FD;
+  --hero-chip-bg: color-mix(in srgb, var(--accent) 16%, transparent);
+  --hero-chip-tx: color-mix(in srgb, var(--accent) 65%, white);
   --hero-card-bg: #0C1626;
   color-scheme: dark;
 }
@@ -542,8 +553,8 @@ body {
   background: rgba(6,12,24,.66);
 }
 .dark .theme-employee .nav-item:hover {
-  background: rgba(96,165,250,.12);
-  color: #93C5FD;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: color-mix(in srgb, var(--accent) 65%, white);
 }
 .dark .theme-employee .skeleton::after {
   background: linear-gradient(90deg, transparent, rgba(148,163,184,.18), transparent);

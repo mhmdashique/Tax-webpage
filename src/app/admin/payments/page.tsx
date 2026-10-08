@@ -1,1 +1,1 @@
-﻿"use client"; import { PaymentsView } from "@/components/entities"; export default function P(){ return <PaymentsView role="admin"/>; }
+﻿"use client"; import { AdminPaymentsPremium } from "@/components/admin-premium"; export default function P(){ return <AdminPaymentsPremium/>; }

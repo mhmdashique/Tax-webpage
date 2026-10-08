@@ -9,6 +9,7 @@ import {
 } from "@/lib/hooks";
 import { groupRequirements, checklistProgress, suggestRequirement, isoFlag } from "@/lib/checklist";
 import { downloadFile } from "@/lib/data";
+import { resolveActor } from "@/lib/audit";
 import { Upload, Download, Trash2, FolderOpen, FileCheck2, Replace, ChevronDown, ChevronRight, Search, RotateCcw, Eye, Pencil, History, FileText, CheckCircle2, Clock3, ShieldCheck, MapPin, Building2, Hash, StickyNote, CalendarDays, CloudUpload, Sparkles, ArrowRight } from "lucide-react";
 import type { DocumentRequirement, ChecklistItem, Jurisdiction, TaxType, DocRow, DocumentVersion } from "@/types/database";
 
@@ -509,6 +510,17 @@ function VersionHistory({ documentId, currentVersionNo }: { documentId: string; 
 export function ClientDocumentsView() {
   const { data: myClient } = useMyClient();
   const { data: currentUser } = useCurrentUser();
+
+  /** Proper display name for audit rows: the signed-in person's name, falling back to the company record. */
+  function actorLabel(): string {
+    const who = currentUser as { name?: string } | null;
+    return (
+      who?.name?.trim() ||
+      (myClient as { business_name?: string | null; name?: string } | null)?.business_name ||
+      (myClient as { business_name?: string | null; name?: string } | null)?.name ||
+      "Client"
+    );
+  }
   const { data: jurisdictions = [], isLoading: jLoading, error: jError, mutate: mutateJurisdictions } = useJurisdictions();
   const [countryId, setCountryId] = useState<string | null>(null);
   const [taxTypeId, setTaxTypeId] = useState<string | null>(null);
@@ -663,6 +675,7 @@ export function ClientDocumentsView() {
         client_id: myClient.id, firm_id: myClient.firm_id, filing_id: f.id,
         file_name: file.name, file_url: path, storage_path: path,
         shared_with_client: true, version_no: 1,
+        uploaded_by: (currentUser as { id?: string } | null)?.id ?? null,
       }]).select().single();
       if (insErr) {
         // Storage object is orphaned without its row — remove it where safe.
@@ -689,7 +702,12 @@ export function ClientDocumentsView() {
           await sb.from("documents").update({ checklist_item_id: null }).eq("id", ins.id);
         }
       }
-      await sb.from("activity_log").insert([{ firm_id: myClient.firm_id, action: `uploaded ${file.name}`, entity_type: "document", entity_id: ins.id }]).then(() => {}, () => {});
+      await sb.from("activity_log").insert([{
+        firm_id: myClient.firm_id,
+        ...(await resolveActor(sb)),
+        action: `uploaded ${file.name} by ${actorLabel()}`,
+        entity_type: "document", entity_id: ins.id,
+      }]).then(() => {}, () => {});
       await mutateChecklist();
       await mutateDocs();
       setSuccessMsg(`✓ Successfully uploaded ${file.name}`);
@@ -853,8 +871,10 @@ export function ClientDocumentsView() {
           file_name: file.name, file_url: path, storage_path: path,
         }]);
         if (verErr) throw verErr;
+        const uploaderId = (currentUser as { id?: string } | null)?.id ?? null;
         const { error: ptrErr } = await sb.from("documents").update({
           file_name: file.name, file_url: path, storage_path: path, version_no: next,
+          ...(uploaderId ? { uploaded_by: uploaderId } : {}),
         }).eq("id", d.id);
         if (ptrErr) throw ptrErr;
         // Re-enter review as a fresh upload (clears prior rejection).
@@ -870,7 +890,9 @@ export function ClientDocumentsView() {
           }], { onConflict: "filing_id,document_requirement_id" }).then(() => {}, () => {});
         }
         await sb.from("activity_log").insert([{
-          firm_id: myClient.firm_id, action: `re-uploaded ${file.name} (v${next})`,
+          firm_id: myClient.firm_id,
+          ...(await resolveActor(sb)),
+          action: `re-uploaded ${file.name} (v${next}) by ${actorLabel()}`,
           entity_type: "document", entity_id: d.id,
         }]).then(() => {}, () => {});
         delete failedReplace.current[d.id];

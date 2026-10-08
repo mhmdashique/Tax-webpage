@@ -15,10 +15,11 @@ import { Badge, Button, EmptyState } from "./ui";
 import { useFilings, useTasks, useClients, useCurrentUser, useDocuments, usePayments } from "@/lib/hooks";
 import { dueLabel, greeting, formatMoney, downloadFile } from "@/lib/data";
 import { isComplete, isOverdue, stageLabel, FILING_STAGES, stageIndex } from "@/lib/lifecycle";
-import { PREMIUM, TOOLTIP, PremHero, PremKpi, PremCard, PremBtn } from "./premium-theme";
+import { PREMIUM, TOOLTIP, PremHero, PremKpi, PremCard, PremBtn, StatKpi } from "./premium-theme";
 import { FilingsView, ClientsView, DocumentsView, PaymentsView, MessagesView } from "./entities";
 import { TaskCenter } from "./task-center";
-import { PerformanceView, AccountView } from "./portals";
+import { AccountView } from "./portals";
+import { PerformanceBoard } from "./team-performance";
 import { ReportsView } from "./reports-settings";
 import { TicketHelpCenter } from "./tickets";
 
@@ -125,13 +126,13 @@ function useEmployeeFacts() {
 /* ------------------------------------------------------------------ */
 
 const BLUE = "var(--accent)";
-const SKY = "#0284C7";
+const SKY = "var(--accent-hover)";
 const SLATE = "var(--text-2)";
 const RED = "#DC2626";
 const AMBER = "#D97706";
 const GREEN_OK = "var(--accent)";
 
-const CHART = ["var(--accent)", "#38BDF8", "#F59E0B", "var(--accent-hover)", "#93C5FD", "#EF4444"];
+const CHART = ["var(--accent)", "var(--accent-hover)", "#F59E0B", "var(--accent-hover)", "var(--accent-tint)", "#EF4444"];
 
 function cx(...parts: Array<string | false | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -356,7 +357,7 @@ export function EmployeeDashboardPremium() {
                   <div key={s.key} className="flex min-w-0 flex-1 items-start">
                     <div className="flex min-w-[74px] flex-col items-center gap-1.5 text-center">
                       <span className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold"
-                        style={done || cur ? { background: BLUE, color: "#fff", boxShadow: cur ? "0 0 0 5px #6D28D922" : undefined } : { background: "var(--surface-muted, #F0EDE6)", color: SLATE }}>
+                        style={done || cur ? { background: BLUE, color: "#fff", boxShadow: cur ? "0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent)" : undefined } : { background: "var(--surface-muted, #F0EDE6)", color: SLATE }}>
                         {done ? "✓" : i + 1}
                       </span>
                       <span className="text-[10px] font-semibold leading-tight" style={{ color: cur ? BLUE : "var(--text-2)" }}>{s.label}</span>
@@ -465,7 +466,7 @@ export function EmployeeDashboardPremium() {
                       <YAxis type="category" dataKey="name" width={88} tick={{ fontSize: 11, fill: SLATE }} axisLine={false} tickLine={false} interval={0} />
                       <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "transparent" }} formatter={(value: unknown) => [`${value}`, "Tasks"]} />
                       <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={18}>
-                        {priRows.map((_, i) => <Cell key={i} fill={i === 0 ? BLUE : i === 1 ? SKY : "#38BDF8"} />)}
+                        {priRows.map((_, i) => <Cell key={i} fill={i === 0 ? BLUE : i === 1 ? SKY : "var(--accent-tint)"} />)}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
@@ -813,32 +814,14 @@ export function EmployeePerformancePremium() {
       actions={<><PremBtn role="employee" href="/employee/reports">Reports</PremBtn><PremBtn role="employee" href="/employee/tasks" ghost>Tasks</PremBtn></>}
       kpis={
         <>
-          <PremKpi role="employee" label="Filings done" value={String(f.doneFilings.length)} hint="Completed returns" icon={<BadgeCheck size={19} />} spark={f.throughput.map((d) => d.completed)} />
-          <PremKpi role="employee" label="Tasks done" value={String(f.done.length)} hint="Closed by you" icon={<CheckCircle2 size={19} />} spark={f.weekly.map((w) => w.done)} />
-          <PremKpi role="employee" label="On-time rate" value={f.filings.length ? `${Math.round((f.doneFilings.length / f.filings.length) * 100)}%` : "—"} hint="Across your scope" icon={<Gauge size={19} />} />
-          <PremKpi role="employee" label="Overdue load" value={String(f.overdueTasks.length + f.overdueFilings.length)} hint="Clear to improve" icon={<CircleAlert size={19} />} />
+          <StatKpi label="Filings done" value={String(f.doneFilings.length)} hint="Completed returns" icon={<BadgeCheck size={18} />} spark={f.throughput.map((d) => d.completed)} />
+          <StatKpi label="Tasks done" value={String(f.done.length)} hint="Closed by you" icon={<CheckCircle2 size={18} />} spark={f.weekly.map((w) => w.done)} />
+          <StatKpi label="On-time rate" value={f.filings.length ? `${Math.round((f.doneFilings.length / f.filings.length) * 100)}%` : "—"} hint="Across your scope" icon={<Gauge size={18} />} />
+          <StatKpi label="Overdue load" value={String(f.overdueTasks.length + f.overdueFilings.length)} hint="Clear to improve" icon={<CircleAlert size={18} />} />
         </>
       }
     >
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
-        <PremCard title="Completion ring" sub="Tasks closed by you">
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="h-[128px] w-[128px] shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadialBarChart innerRadius="70%" outerRadius="100%" data={[{ name: "x", value: f.completionPct }]} startAngle={90} endAngle={-270}>
-                  <RadialBar dataKey="value" cornerRadius={8} fill={T.primary} background={{ fill: "var(--surface-muted)" }} />
-                </RadialBarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="min-w-0">
-              <p className="tnum text-3xl font-bold leading-none">{f.completionPct}%</p>
-              <p className="mt-1 text-xs font-semibold leading-snug" style={{ color: "var(--text-2)" }}>{f.done.length}/{f.mine.length} tasks complete</p>
-              <Link href="/employee/tasks" className="mt-2 inline-flex items-center gap-1 text-xs font-bold hover:underline" style={{ color: T.primary }}>Close more <ArrowRight size={13} /></Link>
-            </div>
-          </div>
-        </PremCard>
-        <div className="min-w-0"><PerformanceView role="employee" /></div>
-      </div>
+      <PerformanceBoard role="employee" />
     </PageShell>
   );
 }

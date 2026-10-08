@@ -4,6 +4,7 @@ import { Card, EmptyState, StatusBadge, Badge, Button, Modal, DataTable } from "
 import { useClients, useFilings, useTasks, usePayments, useDocuments, useJurisdictions, useUsers, useReviewItems, useStaffInbox, useDocumentVersions, useMessages, useCurrentUser } from "@/lib/hooks";
 import { createClient } from "@/lib/supabase/client";
 import { dueLabel, toCSV, downloadFile, exportPDF, formatMoney } from "@/lib/data";
+import { resolveActor } from "@/lib/audit";
 import { FILING_STAGES, normalizeStage, displayStatus, nextStage, canAdvance, stageLabel, stageIndex, isOverdue } from "@/lib/lifecycle";
 import { Users, FileText, FolderOpen, CreditCard, Plus, Trash2, Send, Download, Eye, Check, X, History, Calendar, CalendarClock, Wallet, ReceiptText, Search, CheckCheck, ShieldCheck, Inbox } from "lucide-react";
 import { ClientDocumentsView } from "./smart-documents-client";
@@ -188,6 +189,7 @@ export function ClientsView({ role }: { role: "admin" | "employee" }) {
 export function FilingsView({ role }: { role: "admin" | "employee" | "client" }) {
   const { data = [], mutate, isLoading } = useFilings();
   const { data: clients = [] } = useClients();
+  const { data: currentUser } = useCurrentUser();
   const { data: gstPayments = [], mutate: mutateGstPayments } = useGstPayments();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -313,7 +315,13 @@ export function FilingsView({ role }: { role: "admin" | "employee" | "client" })
       // in_preparation → record amount owed/refund
       // client_review → client "review and sign" action item, signature stored on sign
       // filed → fee invoice generated; completed → receipt downloadable
-      await sb.from("activity_log").insert([{ action: `moved filing to ${nxt}`, entity_type: "filing", entity_id: filing.id }]);
+      const who = currentUser as { id?: string; name?: string } | null;
+      await sb.from("activity_log").insert([{
+        ...(who?.id ? { actor_id: who.id } : {}),
+        ...(who?.name ? { actor_name: who.name } : {}),
+        action: `moved filing to ${nxt}${who?.name ? ` by ${who.name}` : ""}`,
+        entity_type: "filing", entity_id: filing.id,
+      }]);
       await mutate();
       if (nxt === "filed") await mutateGstPayments();
     } catch (caught) {
@@ -740,7 +748,18 @@ function StaffDocumentsView({ role }: { role: "admin" | "employee" }) {
       const { error: upErr } = await sb.storage.from("documents").upload(path, file);
       if (upErr) throw upErr;
       const { data: url } = sb.storage.from("documents").getPublicUrl(path);
-      await sb.from("documents").insert([{ file_name: file.name, file_url: url.publicUrl, shared_with_client: true, client_id: null }]);
+      const actor = await resolveActor(sb);
+      const { data: ins } = await sb.from("documents").insert([{
+        file_name: file.name, file_url: url.publicUrl, shared_with_client: true, client_id: null,
+        ...(actor.actor_id ? { uploaded_by: actor.actor_id } : {}),
+      }]).select().single();
+      if (ins) {
+        await sb.from("activity_log").insert([{
+          ...actor,
+          action: `uploaded ${file.name}${actor.actor_name ? ` by ${actor.actor_name}` : ""}`,
+          entity_type: "document", entity_id: (ins as { id: string }).id,
+        }]).then(() => {}, () => {});
+      }
       mutate();
     } finally { setUploading(false); }
   }
@@ -795,7 +814,7 @@ function StaffDocumentsView({ role }: { role: "admin" | "employee" }) {
             ))}
           </div>
           <button onClick={() => setNewOnly((v) => !v)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${newOnly ? "text-white" : ""}`}
-            style={newOnly ? { background: "#D97706" } : { border: "1px solid var(--border)" }} title="Show only newly uploaded documents">
+            style={newOnly ? { background: "var(--accent)", color: "#fff" } : { border: "1px solid var(--border)" }} title="Show only newly uploaded documents">
             New only{counts.fresh > 0 ? ` (${counts.fresh})` : ""}
           </button>
         </div>
@@ -1216,7 +1235,7 @@ export function MessagesView({ embedded = false }: { embedded?: boolean }) {
                     {m.body}
                   </div>
                   <p className={`mt-1 flex items-center gap-1 text-[11px] ${mine ? "justify-end" : ""}`} style={{ color: "var(--text-2)" }}>
-                    {fmtMsgTime(m.created_at)}{mine && <CheckCheck size={12} style={{ color: m.read_at ? "var(--accent-hover)" : "#93C5FD" }} />}
+                    {fmtMsgTime(m.created_at)}{mine && <CheckCheck size={12} style={{ color: m.read_at ? "var(--accent-hover)" : "var(--border)" }} />}
                   </p>
                 </div>
               </div>

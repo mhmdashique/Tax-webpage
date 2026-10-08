@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const gate = await requireApprovedUser();
   if ("error" in gate) return NextResponse.json({ error: gate.error }, { status: gate.status });
   const { sb } = gate;
-  const { data, error } = await sb.from("documents").insert([{ file_name: body.file_name, file_url: body.file_url, client_id: body.client_id ?? null, filing_id: body.filing_id ?? null, shared_with_client: true }]).select().single();
+  const { data, error } = await sb.from("documents").insert([{ file_name: body.file_name, file_url: body.file_url, client_id: body.client_id ?? null, filing_id: body.filing_id ?? null, shared_with_client: true, uploaded_by: gate.userId }]).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ data }, { status: 201 });
 }

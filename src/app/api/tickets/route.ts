@@ -119,7 +119,7 @@ export async function POST(req: Request) {
   const t = inserted as { id: string; ticket_no: string };
 
   await logHistory(svc, t.id, "created", viewer.id, null, "Open");
-  await logActivity(svc, viewer.firmId, viewer.id, `created ticket ${t.ticket_no}`, t.id);
+  await logActivity(svc, viewer.firmId, viewer.id, viewer.name, `created ticket ${t.ticket_no} by ${viewer.name}`, t.id);
 
   // Notify: client ticket → admins + employees; employee ticket → admins only
   const recipients = viewer.role === "client"

@@ -134,7 +134,7 @@ export default function LoginPage() {
           </span>
         </Link>
         <div className="flex items-center gap-2.5">
-          <Link href="/" className="hidden text-[13px] font-semibold hover:text-[#2563EB] hover:underline sm:block">
+          <Link href="/" className="hidden text-[13px] font-semibold hover:underline sm:block hover:text-[var(--accent)]">
             ← Back to home
           </Link>
           <ThemeToggle />
@@ -218,7 +218,7 @@ export default function LoginPage() {
               <div className="flex items-center gap-3.5">
                 <span
                   className="flex h-12 w-12 items-center justify-center rounded-2xl text-white"
-                  style={{ background: "linear-gradient(135deg,#2563EB,#1E40AF)", boxShadow: "0 8px 20px rgba(37,99,235,.35)" }}
+                  style={{ background: "linear-gradient(135deg,var(--accent),var(--accent-hover))", boxShadow: "0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent)" }}
                 >
                   <LockKeyhole size={22} />
                 </span>
@@ -244,7 +244,7 @@ export default function LoginPage() {
                           className="rounded-2xl border px-2 py-3 text-center transition-all hover:-translate-y-0.5"
                           style={
                             active
-                              ? { borderColor: "#2563EB", background: "var(--accent-tint)", boxShadow: "0 0 0 3px rgba(37,99,235,.15)" }
+                              ? { borderColor: "var(--accent)", background: "var(--accent-tint)", boxShadow: "0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent)" }
                               : { borderColor: "var(--border)", background: "var(--bg)" }
                           }
                         >
@@ -269,7 +269,7 @@ export default function LoginPage() {
                       placeholder="you@firm.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-xl border py-3 pl-10 pr-3.5 text-sm outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/15"
+                      className="w-full rounded-xl border py-3 pl-10 pr-3.5 text-sm outline-none transition-all focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/15"
                       style={{ borderColor: "var(--border)", background: "var(--bg)" }}
                     />
                   </div>
@@ -290,7 +290,7 @@ export default function LoginPage() {
                       placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl border py-3 pl-10 pr-11 text-sm outline-none transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/15"
+                      className="w-full rounded-xl border py-3 pl-10 pr-11 text-sm outline-none transition-all focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/15"
                       style={{ borderColor: "var(--border)", background: "var(--bg)" }}
                     />
                     <button
@@ -312,7 +312,7 @@ export default function LoginPage() {
                     aria-checked={remember}
                     onClick={() => setRemember(!remember)}
                     className="flex h-5 w-9 items-center rounded-full p-0.5 transition-colors"
-                    style={{ background: remember ? "#2563EB" : "var(--border)", justifyContent: remember ? "flex-end" : "flex-start" }}
+                    style={{ background: remember ? "var(--accent)" : "var(--border)", justifyContent: remember ? "flex-end" : "flex-start" }}
                   >
                     <span className="h-4 w-4 rounded-full bg-white shadow" />
                   </button>
@@ -329,7 +329,7 @@ export default function LoginPage() {
                   type="submit"
                   disabled={loading}
                   className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[15px] font-bold text-white transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
-                  style={{ background: "linear-gradient(120deg,#2563EB,#1D4ED8)", boxShadow: "0 10px 28px rgba(37,99,235,.4)" }}
+                  style={{ background: "linear-gradient(120deg,var(--accent),var(--accent-hover))", boxShadow: "0 10px 28px color-mix(in srgb, var(--accent) 40%, transparent)" }}
                 >
                   {loading ? (<><Loader2 size={17} className="animate-spin" /> Signing you in…</>) : (<>Log in to {accountType} workspace <ArrowRight size={16} /></>)}
                 </button>

@@ -4,10 +4,11 @@ import { Card, StatCard, Badge, Button, EmptyState, Modal, DataTable, Sparkline 
 import { useFilings, usePayments, useTasks } from "@/lib/hooks";
 import { toCSV, downloadFile, exportPDF, formatMoney } from "@/lib/data";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
-import { Download, Trash2, Plus, Bell, Building2, ShieldCheck, Plug, CreditCard, ScrollText } from "lucide-react";
+import { Download, Trash2, Plus, Bell, Building2, ShieldCheck, Plug, CreditCard, ScrollText, Settings2, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isComplete, isOverdue, displayStatus, stageLabel } from "@/lib/lifecycle";
 import { GstRulesSettings } from "./gst-payments";
+import { ThemePicker, AccentPicker, useTheme } from "./theme-provider";
 
 export function ReportsView() {
   const { data: filings = [] } = useFilings();
@@ -111,6 +112,7 @@ export function SettingsView() {
     { k: "rules", label: "Tax Rules", icon: <ScrollText size={15} /> },
     { k: "gst-rules", label: "GST Interest & Late Fees", icon: <CreditCard size={15} /> },
     { k: "notifications", label: "Notifications", icon: <Bell size={15} /> },
+    { k: "preferences", label: "Preferences", icon: <Settings2 size={15} /> },
     { k: "firm", label: "Firm Profile", icon: <Building2 size={15} /> },
     { k: "security", label: "Security", icon: <ShieldCheck size={15} /> },
     { k: "team", label: "Team & Roles", icon: <Plus size={15} /> },
@@ -174,6 +176,30 @@ export function SettingsView() {
               <span className="font-medium">{k.replace(/_/g, " ")}</span>
             </label>
           ))}
+        </Card>
+      )}
+
+      {tab === "preferences" && (
+        <Card>
+          <h2 className="mb-3 font-semibold">Preferences</h2>
+          <p className="eyebrow mb-2">Appearance — night mode included</p>
+          <ThemePicker />
+          <p className="eyebrow mb-2 mt-5">Dashboard color — applies everywhere</p>
+          <AccentPicker />
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-2)" }}>Language</label>
+              <select defaultValue="en" className="rounded-[10px] border w-full px-3 py-2 text-sm" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1" style={{ color: "var(--text-2)" }}>Timezone</label>
+              <input defaultValue="UTC" className="rounded-[10px] border w-full px-3 py-2 text-sm" style={{ borderColor: "var(--border)", background: "var(--bg)" }} />
+            </div>
+          </div>
         </Card>
       )}
 

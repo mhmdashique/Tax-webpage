@@ -1,1 +1,1 @@
-﻿"use client"; import { MessagesView } from "@/components/entities"; export default function P(){ return <MessagesView/>; }
+﻿"use client"; import { AdminMessagesPremium } from "@/components/admin-premium"; export default function P(){ return <AdminMessagesPremium/>; }

@@ -14,21 +14,23 @@ const Ctx = createContext<{
   setAccent: (a: Accent) => void;
 }>({ theme: "system", resolved: "light", setTheme: () => {}, toggle: () => {}, accent: "blue", setAccent: () => {} });
 
-export type Accent = "blue" | "green" | "yellow";
+export type Accent = "blue" | "green" | "yellow" | "orange";
 
 const ACCENTS: Record<Accent, { accent: string; hover: string; tint: string; tintDark: string }> = {
   blue: { accent: "#2563EB", hover: "#1D4ED8", tint: "#DBEAFE", tintDark: "rgba(96,165,250,0.14)" },
   green: { accent: "#16A34A", hover: "#15803D", tint: "#DCFCE7", tintDark: "rgba(34,197,94,0.14)" },
   yellow: { accent: "#D97706", hover: "#B45309", tint: "#FEF3C7", tintDark: "rgba(251,191,36,0.16)" },
+  orange: { accent: "#EA580C", hover: "#C2410C", tint: "#FFEDD5", tintDark: "rgba(251,146,60,0.16)" },
 };
 
 function readAccent(): Accent {
   if (typeof document === "undefined") return "blue";
-  const c = document.cookie.match(/(?:^|; )taxdesk-accent=(blue|green|yellow)/)?.[1];
-  if (c === "blue" || c === "green" || c === "yellow") return c;
+  const keys = Object.keys(ACCENTS);
+  const c = document.cookie.match(/taxdesk-accent=(blue|green|yellow|orange)/)?.[1];
+  if (c && keys.includes(c)) return c as Accent;
   try {
     const ls = localStorage.getItem("taxdesk-accent");
-    if (ls === "blue" || ls === "green" || ls === "yellow") return ls;
+    if (ls && keys.includes(ls)) return ls as Accent;
   } catch {}
   return "blue";
 }
@@ -204,13 +206,14 @@ const ACCENT_OPTIONS: { key: Accent; label: string; desc: string; swatch: string
   { key: "blue", label: "Blue", desc: "Default workspace", swatch: "#2563EB" },
   { key: "green", label: "Green", desc: "Fresh & calm", swatch: "#16A34A" },
   { key: "yellow", label: "Yellow", desc: "Warm & bold", swatch: "#D97706" },
+  { key: "orange", label: "Orange", desc: "Vibrant & energetic", swatch: "#EA580C" },
 ];
 
 export function AccentPicker() {
   const { accent, setAccent } = useTheme();
   return (
     <div>
-      <div className="grid gap-2.5 sm:grid-cols-3" role="radiogroup" aria-label="Dashboard color">
+      <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4" role="radiogroup" aria-label="Dashboard color">
         {ACCENT_OPTIONS.map((o) => {
           const active = accent === o.key;
           return (

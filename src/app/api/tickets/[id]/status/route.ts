@@ -28,7 +28,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const { error } = await svc.from("tickets").update({ status: parsed.data.status }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   await logHistory(svc, id, "status_changed", viewer.id, ticket.status, parsed.data.status);
-  await logActivity(svc, viewer.firmId, viewer.id, `moved ticket ${ticket.ticket_no} to ${parsed.data.status}`, id);
+  await logActivity(svc, viewer.firmId, viewer.id, viewer.name, `moved ticket ${ticket.ticket_no} to ${parsed.data.status} by ${viewer.name}`, id);
 
   const creator = await userEmail(svc, ticket.created_by_id);
   const assignee = await userEmail(svc, ticket.assigned_to);

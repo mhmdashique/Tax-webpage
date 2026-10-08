@@ -273,7 +273,7 @@ export default function LandingPage() {
               </div>
               <div className="grid gap-5 p-6 md:grid-cols-[1.4fr_.9fr] md:p-8">
                 <div>
-                  <div className="relative overflow-hidden rounded-xl p-6 text-white md:p-7" style={{ background: "linear-gradient(135deg,#2563EB 0%,#1D4ED8 55%,#1E1B4B 130%)" }}>
+                  <div className="relative overflow-hidden rounded-xl p-6 text-white md:p-7" style={{ background: "linear-gradient(135deg,var(--accent) 0%,var(--accent-hover) 55%,#1E1B4B 130%)" }}>
                     <div aria-hidden className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/15 blur-2xl" />
                     <p className="text-[15px] opacity-80">Good morning, Amira ☀️</p>
                     <p className="mt-1.5 text-2xl font-bold md:text-[26px]">Firm overview · 128 active clients</p>
@@ -428,7 +428,7 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold" style={{ background: "color-mix(in srgb, #2563EB 10%, transparent)", color: "#1D4ED8" }}>
+            <div className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold" style={{ background: "color-mix(in srgb, var(--accent) 10%, transparent)", color: "var(--accent-hover)" }}>
               <CheckCircle2 size={14} /> Last month: 214 filings auto-created · 0 missed
             </div>
           </div>

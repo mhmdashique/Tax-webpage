@@ -216,7 +216,7 @@ export default function PendingApprovalPage() {
                   router.refresh();
                 }}
                 className="w-full rounded-[10px] py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
-                style={{ background: "linear-gradient(135deg,#2563EB,#1D4ED8)" }}
+                style={{ background: "linear-gradient(135deg,var(--accent),var(--accent-hover))" }}
               >
                 Go to Dashboard →
               </button>
@@ -269,7 +269,7 @@ export default function PendingApprovalPage() {
                 onClick={() => checkStatus(false)}
                 disabled={checking}
                 className="w-full rounded-[10px] py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-                style={{ background: "#2563EB" }}
+                style={{ background: "var(--accent)" }}
               >
                 {checking ? "Checking…" : "Refresh status"}
               </button>

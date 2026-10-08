@@ -58,27 +58,16 @@ export function PremHero({
   const t = PREMIUM[role];
   const { resolved } = useTheme();
   const dark = resolved === "dark";
-  const light = (role === "client" || role === "employee") && !dark;
-  const heroStyle = light
-    ? { background: t.hero, border: "1px solid var(--hero-border)", color: "var(--hero-text)" }
-    : role === "client" || role === "employee"
-      ? { background: "var(--hero-bg)", border: "1px solid var(--hero-border)", color: "var(--hero-text)" }
-      : { background: t.hero, color: "#fff" };
-  const chipStyle = light
-    ? { background: "var(--hero-chip-bg)", color: "var(--hero-chip-tx)" }
-    : role === "client" || role === "employee"
-      ? { background: "var(--hero-chip-bg)", color: "var(--hero-chip-tx)" }
-      : { background: "rgba(255,255,255,.16)" };
-  const statStyle = light
-    ? { background: "var(--hero-card-bg)", border: "1px solid var(--hero-border)" }
-    : role === "client" || role === "employee"
-      ? { background: "var(--hero-card-bg)", border: "1px solid var(--hero-border)" }
-      : { background: "rgba(255,255,255,.10)", border: "1px solid rgba(255,255,255,.15)" };
-  const subColor = light || role === "client" || role === "employee" ? "var(--hero-sub)" : "rgba(255,255,255,.85)";
+  // Every role theme (.theme-admin / .theme-employee / .client-theme) now defines the
+  // same --hero-* token set, so admin renders the identical hero as employee + client.
+  const heroStyle = { background: "var(--hero-bg)", border: "1px solid var(--hero-border)", color: "var(--hero-text)" };
+  const chipStyle = { background: "var(--hero-chip-bg)", color: "var(--hero-chip-tx)" };
+  const statStyle = { background: "var(--hero-card-bg)", border: "1px solid var(--hero-border)" };
+  const subColor = "var(--hero-sub)";
   return (
     <section className="relative overflow-hidden rounded-[20px] p-6 md:p-7" style={heroStyle}>
       <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full" style={{ background: `radial-gradient(closest-side,${t.glow},transparent)` }} />
-      {!light && <div aria-hidden className="pointer-events-none absolute -bottom-28 -left-16 h-72 w-72 rounded-full" style={{ background: "radial-gradient(closest-side,rgba(255,255,255,.14),transparent)" }} />}
+      {dark && <div aria-hidden className="pointer-events-none absolute -bottom-28 -left-16 h-72 w-72 rounded-full" style={{ background: "radial-gradient(closest-side,rgba(255,255,255,.14),transparent)" }} />}
       <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center">
         <div className="min-w-0 flex-1">
           <p className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em]" style={chipStyle}>{eyebrow}</p>
@@ -170,6 +159,32 @@ export function PremBtn({ role, href, children, ghost = false }: { role: Premium
     return <Link href={href} className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5" style={{ background: t.primary }}>{children}</Link>;
   }
   if (ghost)
-    return <Link href={href} className="inline-flex items-center gap-2 rounded-lg border border-white/40 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/10">{children}</Link>;
-  return <Link href={href} className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold transition-transform hover:-translate-y-0.5" style={{ color: t.deep }}>{children}</Link>;
+    return <Link href={href} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-bold transition-colors hover:bg-[var(--surface-muted)]" style={{ borderColor: "var(--border)", color: t.primary }}>{children}</Link>;
+  return <Link href={href} className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5" style={{ background: t.primary }}>{children}</Link>;
+}
+
+/* Stat card — label / big value / hint + blue icon chip, optional spark pills. */
+export function StatKpi({ label, value, hint, icon, spark }: {
+  label: string; value: string; hint: string; icon: ReactNode; spark?: number[];
+}) {
+  const max = Math.max(...(spark ?? [1]), 1);
+  return (
+    <div className="card p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-bold uppercase tracking-[0.1em]" style={{ color: "var(--text-2)" }}>{label}</p>
+          <p className="tnum mt-1.5 truncate text-[28px] font-bold leading-none tracking-tight">{value}</p>
+          <p className="mt-1.5 truncate text-xs" style={{ color: "var(--text-2)" }}>{hint}</p>
+        </div>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl" style={{ background: "var(--accent-tint)", color: "var(--accent)" }}>{icon}</span>
+      </div>
+      {spark && spark.length > 1 && (
+        <div className="mt-3 flex h-7 items-end gap-1.5" aria-hidden>
+          {spark.map((v, i) => (
+            <span key={i} className="w-full rounded-full" style={{ height: `${6 + (v / max) * 22}px`, background: i === spark.length - 1 ? "var(--accent)" : "var(--accent-tint)" }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

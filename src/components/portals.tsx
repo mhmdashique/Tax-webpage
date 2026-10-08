@@ -127,7 +127,7 @@ export function AccountView({ role }: { role: "employee" | "client" | "admin" })
   const complete = Math.round((fields.filter((v) => String(v ?? "").trim() !== "").length / fields.length) * 100);
   const accent = "var(--accent)";
   const { resolved, accent: accentName } = useTheme();
-  const pickerAccent = accentName === "green" ? "#16A34A" : accentName === "yellow" ? "#D97706" : "var(--accent)";
+  const pickerAccent = accentName === "green" ? "#16A34A" : accentName === "yellow" ? "#D97706" : accentName === "orange" ? "#EA580C" : "var(--accent)";
   const ink = resolved === "dark" ? "#F1F5F9" : "#111827";
 
   return (

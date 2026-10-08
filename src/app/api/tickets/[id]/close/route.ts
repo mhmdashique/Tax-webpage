@@ -36,7 +36,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       .update({ status: "Reopened", closed_by: null, closed_at: null, closing_remark: null }).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     await logHistory(svc, id, "reopened", viewer.id, "Closed", "Reopened");
-    await logActivity(svc, viewer.firmId, viewer.id, `reopened ticket ${ticket.ticket_no}`, id);
+    await logActivity(svc, viewer.firmId, viewer.id, viewer.name, `reopened ticket ${ticket.ticket_no} by ${viewer.name}`, id);
     const creator = await userEmail(svc, ticket.created_by_id);
     void sendTicketEmail(creator && creator !== viewer.email ? [creator] : [], `Ticket ${ticket.ticket_no} reopened`,
       `<p>Ticket <strong>${ticket.ticket_no}</strong> was reopened by ${viewer.name}.</p>`);
@@ -55,7 +55,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   await logHistory(svc, id, "closed", viewer.id, ticket.status, "Closed");
-  await logActivity(svc, viewer.firmId, viewer.id, `closed ticket ${ticket.ticket_no}`, id);
+  await logActivity(svc, viewer.firmId, viewer.id, viewer.name, `closed ticket ${ticket.ticket_no} by ${viewer.name}`, id);
 
   const creator = await userEmail(svc, ticket.created_by_id);
   const assignee = await userEmail(svc, ticket.assigned_to);

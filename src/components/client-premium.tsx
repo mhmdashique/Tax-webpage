@@ -23,14 +23,14 @@ import { ClientTaskCenter, AccountView, HistoryView } from "./portals";
 
 const GREEN = "var(--accent)";
 const GREEN_SOFT = "var(--accent-tint)";
-const BRASS = "#0284C7";
-const BRASS_SOFT = "#E0F2FE";
-const TEAL = "#0EA5E9";
+const BRASS = "var(--accent-hover)";
+const BRASS_SOFT = "var(--accent-tint)";
+const TEAL = "var(--accent-hover)";
 const SLATE = "var(--text-2)";
 const RED = "#DC2626";
 const AMBER = "#D97706";
 
-const CHART = ["var(--accent)", "#38BDF8", "#F59E0B", "var(--accent-hover)", "#93C5FD", "#F87171"];
+const CHART = ["var(--accent)", "var(--accent-hover)", "#F59E0B", "var(--accent-hover)", "var(--accent-tint)", "#F87171"];
 
 function cx(...parts: Array<string | false | undefined>) {
   return parts.filter(Boolean).join(" ");
@@ -46,7 +46,7 @@ export function PremiumHead({
   return (
     <div className="relative overflow-hidden rounded-2xl p-5 md:p-6" style={{ border: "1px solid var(--hero-border)", background: "var(--hero-bg)" }}>
       <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full" style={{ background: "radial-gradient(closest-side,color-mix(in srgb, var(--accent) 14%, transparent),transparent)" }} />
-      <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-12 h-56 w-56 rounded-full" style={{ background: "radial-gradient(closest-side,rgba(56,189,248,.12),transparent)" }} />
+      <div aria-hidden className="pointer-events-none absolute -bottom-24 -left-12 h-56 w-56 rounded-full" style={{ background: "radial-gradient(closest-side,color-mix(in srgb, var(--accent) 12%, transparent),transparent)" }} />
       <div className="relative flex flex-wrap items-end gap-4">
         <div className="min-w-0 flex-1">
           <p className="inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em]" style={{ background: "var(--hero-chip-bg)", color: "var(--hero-chip-tx)" }}>{eyebrow}</p>
@@ -331,7 +331,7 @@ export function ClientDashboardPremium() {
                   <div key={s} className="flex min-w-0 flex-1 items-start">
                     <div className="flex min-w-[74px] flex-col items-center gap-1.5 text-center">
                       <span className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold"
-                        style={done || cur ? { background: GREEN, color: "#fff", boxShadow: cur ? "0 0 0 5px #6D28D922" : undefined } : { background: "var(--surface-muted, #F0EDE6)", color: SLATE }}>
+                        style={done || cur ? { background: GREEN, color: "#fff", boxShadow: cur ? "0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent)" : undefined } : { background: "var(--surface-muted, #F0EDE6)", color: SLATE }}>
                         {done ? "✓" : i + 1}
                       </span>
                       <span className="text-[10px] font-semibold leading-tight" style={{ color: cur ? GREEN : "var(--text-2)" }}>{s}</span>
@@ -437,7 +437,7 @@ export function ClientDashboardPremium() {
                   <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 11, fill: SLATE }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={(v: unknown) => formatMoney(Number(v))} />
                   <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={18}>
-                    {f.payBars.map((_, i) => <Cell key={i} fill={i === 0 ? GREEN : i === 1 ? BRASS : "#38BDF8"} />)}
+                    {f.payBars.map((_, i) => <Cell key={i} fill={i === 0 ? GREEN : i === 1 ? BRASS : "var(--accent-tint)"} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -575,7 +575,7 @@ function ActionRow({ icon, tone, title, meta, href, cta }: {
 }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border px-3 py-2.5" style={{ borderColor: "var(--border)", background: "var(--row-bg, var(--surface))" }}>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={tone === "red" ? { background: "#FEF2F2", color: RED } : { background: "#E0F2FE", color: "#0369A1" }}>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={tone === "red" ? { background: "var(--danger-bg)", color: "var(--danger-tx)" } : { background: "var(--accent-tint)", color: "var(--accent)" }}>
         {icon}
       </span>
       <div className="min-w-0 flex-1">

@@ -239,3 +239,30 @@ export function Sparkline({ points, color = "var(--accent)" }: { points: number[
     </svg>
   );
 }
+
+export function ScoreRing({ value, label }: { value: number; label: string }) {
+  const v = Math.max(0, Math.min(100, Math.round(value)));
+  const r = 52;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="flex items-center gap-4">
+      <div className="relative h-[132px] w-[132px] shrink-0">
+        <svg viewBox="0 0 132 132" className="h-full w-full -rotate-90">
+          <circle cx="66" cy="66" r={r} fill="none" strokeWidth="12" style={{ stroke: "var(--hero-track, var(--surface-muted))" }} />
+          <circle cx="66" cy="66" r={r} fill="none" stroke="var(--accent)" strokeWidth="12" strokeLinecap="round"
+            strokeDasharray={c} strokeDashoffset={c - (c * v) / 100} style={{ transition: "stroke-dashoffset .8s ease" }} />
+        </svg>
+        <div className="absolute inset-0 flex rotate-0 flex-col items-center justify-center" style={{ color: "var(--text)" }}>
+          <span className="tnum text-3xl font-bold">{v}</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] opacity-60">/ 100</span>
+        </div>
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-bold" style={{ color: "var(--text)" }}>{label}</p>
+        <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--text-2)" }}>
+          {v >= 85 ? "Excellent — everything is filed, paid and up to date." : v >= 60 ? "Good — finish the open items to reach fully compliant." : "Needs attention — a few filings or payments are overdue."}
+        </p>
+      </div>
+    </div>
+  );
+}

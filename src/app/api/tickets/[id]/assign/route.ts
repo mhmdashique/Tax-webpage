@@ -33,7 +33,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const { error } = await svc.from("tickets").update({ assigned_to: parsed.data.assigned_to }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   await logHistory(svc, id, "assigned", viewer.id, ticket.assigned_to ?? null, parsed.data.assigned_to);
-  await logActivity(svc, viewer.firmId, viewer.id, `assigned ticket ${ticket.ticket_no}`, id);
+  await logActivity(svc, viewer.firmId, viewer.id, viewer.name, `assigned ticket ${ticket.ticket_no} by ${viewer.name}`, id);
 
   const assignee = await userEmail(svc, parsed.data.assigned_to);
   void sendTicketEmail(assignee ? [assignee] : [], `Ticket ${ticket.ticket_no} assigned to you`,

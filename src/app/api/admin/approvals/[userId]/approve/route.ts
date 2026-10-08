@@ -135,11 +135,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
     }
   }
 
-  // Activity log (best effort).
+  // Activity log (best effort) — include the admin's proper name.
+  const { data: adminRow } = await svc.from("users").select("name").eq("id", adminId).maybeSingle();
+  const adminName = (adminRow as { name?: string } | null)?.name?.trim() || "Admin";
   await svc.from("activity_log").insert([{
     firm_id: firmId,
     actor_id: adminId,
-    action: "approved_user",
+    actor_name: adminName,
+    action: `approved ${t.email} by ${adminName}`,
     entity_type: "user",
     entity_id: userId,
   }]).then(() => {}, () => {});

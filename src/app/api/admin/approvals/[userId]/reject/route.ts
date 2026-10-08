@@ -59,11 +59,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ userId:
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
 
-  // Activity log (best effort).
+  // Activity log (best effort) — include the admin's proper name.
+  const { data: adminRow } = await svc.from("users").select("name").eq("id", adminId).maybeSingle();
+  const adminName = (adminRow as { name?: string } | null)?.name?.trim() || "Admin";
   await svc.from("activity_log").insert([{
     firm_id: firmId,
     actor_id: adminId,
-    action: "rejected_user",
+    actor_name: adminName,
+    action: `rejected ${t.email} by ${adminName}`,
     entity_type: "user",
     entity_id: userId,
   }]).then(() => {}, () => {});

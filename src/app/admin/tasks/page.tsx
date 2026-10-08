@@ -1,1 +1,1 @@
-﻿"use client"; import { TasksView } from "@/components/entities"; export default function P(){ return <TasksView role="admin"/>; }
+﻿"use client"; import { AdminTasksPremium } from "@/components/admin-premium"; export default function P(){ return <AdminTasksPremium/>; }

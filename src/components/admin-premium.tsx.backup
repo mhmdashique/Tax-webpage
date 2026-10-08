@@ -1,5 +1,5 @@
-"use client";
-import { useMemo, useState } from "react";
+﻿"use client";
+import { useMemo } from "react";
 import Link from "next/link";
 import useSWR from "swr";
 import {
@@ -16,12 +16,10 @@ import {
 import { Badge, EmptyState, ScoreRing, Button } from "./ui";
 import { useFilings, useTasks, useClients, usePayments, useActivity, useDocuments, useUsers, useJurisdictions, useTaxTypes } from "@/lib/hooks";
 import { dueLabel, greeting, formatMoney, toCSV, downloadFile } from "@/lib/data";
-import { humanizeAction, actorDisplayName, buildDocUploader } from "@/lib/audit";
 import { FILING_STAGES, normalizeStage, isComplete, isFiledOrLater, isOverdue } from "@/lib/lifecycle";
-import { PREMIUM, TOOLTIP, PremKpi, PremCard, PremBtn, PremHero, StatKpi } from "./premium-theme";
+import { PREMIUM, TOOLTIP, PremKpi, PremCard, PremBtn, PremHero } from "./premium-theme";
 import { FilingsView, ClientsView, TasksView, DocumentsView, PaymentsView, MessagesView } from "./entities";
-import { TeamDirectory, PerformanceBoard } from "./team-performance";
-import { AuditTrailView, useAuditFacts } from "./audit-trail";
+import { PerformanceView } from "./portals";
 import { ReportsView, SettingsView } from "./reports-settings";
 import { ThemePicker, AccentPicker, useTheme } from "./theme-provider";
 import { TicketHelpCenter, useTicketStats } from "./tickets";
@@ -30,8 +28,8 @@ import { createClient } from "@/lib/supabase/client";
 const T = PREMIUM.admin;
 
 /* ------------------------------------------------------------------ */
-/*  Shared firm-wide facts — mirrors useEmployeeFacts / useClientFacts  */
-/*  so every admin KPI shows live numbers, never "—" placeholders.      */
+/*  Shared firm-wide facts â€” mirrors useEmployeeFacts / useClientFacts  */
+/*  so every admin KPI shows live numbers, never "â€”" placeholders.      */
 /* ------------------------------------------------------------------ */
 
 function daysUntil(due?: string | null): number | null {
@@ -120,10 +118,6 @@ export function AdminDashboardPremium() {
   const { data: clients = [] } = useClients();
   const { data: payments = [] } = usePayments();
   const { data: activity = [] } = useActivity();
-  const { data: users = [] } = useUsers();
-  const { data: docs = [] } = useDocuments();
-  const namesById = useMemo(() => new Map(users.map((u) => [u.id, u.name] as [string, string])), [users]);
-  const docUploader = useMemo(() => buildDocUploader(docs, clients, namesById), [docs, clients, namesById]);
 
   const now = new Date();
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -155,67 +149,7 @@ export function AdminDashboardPremium() {
     return [...m.entries()].map(([name, value]) => ({ name, value }));
   }, [filings]);
 
-  // ---- Deadline tracker UI state ----
-  const [dlFilter, setDlFilter] = useState<"all" | "overdue" | "soon" | "done">("all");
-  const dlCounts = useMemo(() => {
-    const ov = filings.filter((f) => isOverdue(String(f.status), f.due_date)).length;
-    const soon = filings.filter((f) => {
-      if (isComplete(String(f.status))) return false;
-      const n = daysUntil(f.due_date);
-      return n !== null && n >= 0 && n <= 7;
-    }).length;
-    const done = filings.filter((f) => isComplete(String(f.status))).length;
-    return { ov, soon, done, total: filings.length };
-  }, [filings]);
-  const dlList = useMemo(() => {
-    let list = [...filings].sort((a, b) => +new Date(a.due_date) - +new Date(b.due_date));
-    if (dlFilter === "overdue") list = list.filter((f) => isOverdue(String(f.status), f.due_date));
-    if (dlFilter === "soon") list = list.filter((f) => {
-      if (isComplete(String(f.status))) return false;
-      const n = daysUntil(f.due_date);
-      return n !== null && n >= 0 && n <= 7;
-    });
-    if (dlFilter === "done") list = list.filter((f) => isComplete(String(f.status)));
-    return list.slice(0, 6);
-  }, [filings, dlFilter]);
-
-  // ---- Recent activity UI state ----
-  const [actFilter, setActFilter] = useState<string>("all");
-  const actTypes = useMemo(() => {
-    const s = new Set(activity.map((a) => String(a.entity_type ?? "other").toLowerCase()));
-    return ["all", ...[...s].slice(0, 5)];
-  }, [activity]);
-  const actList = useMemo(() => {
-    const list = actFilter === "all" ? activity : activity.filter((a) => String(a.entity_type ?? "").toLowerCase() === actFilter);
-    return list.slice(0, 10);
-  }, [activity, actFilter]);
-
-  function timeAgo(iso: string): string {
-    // eslint-disable-next-line react-hooks/purity -- relative timestamp, recomputed on render is intentional
-    const s = Math.max(1, Math.floor((Date.now() - +new Date(iso)) / 1000));
-    if (s < 60) return `${s}s ago`;
-    const m = Math.floor(s / 60);
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    const d = Math.floor(h / 24);
-    if (d < 30) return `${d}d ago`;
-    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  }
-
-  function activityVisual(entity: string, action: string): { icon: React.ReactNode; bg: string; fg: string } {
-    const e = entity.toLowerCase();
-    const a = action.toLowerCase();
-    if (e.includes("filing")) return { icon: <FileCheck size={14} />, bg: "var(--accent-tint)", fg: "var(--accent)" };
-    if (e.includes("task")) return { icon: <Briefcase size={14} />, bg: "#E0F2FE", fg: "#0284C7" };
-    if (e.includes("doc")) return { icon: <Upload size={14} />, bg: "#FEF3C7", fg: "#B45309" };
-    if (e.includes("pay") || e.includes("invoice")) return { icon: <CreditCard size={14} />, bg: "#DCFCE7", fg: "#15803D" };
-    if (e.includes("message") || e.includes("comment")) return { icon: <MessageSquare size={14} />, bg: "#F3E8FF", fg: "#7C3AED" };
-    if (e.includes("client") || e.includes("user")) return { icon: <UserPlus size={14} />, bg: "#FFE4E6", fg: "#BE123C" };
-    if (a.includes("overdue") || a.includes("escalat") || a.includes("reject") || a.includes("fail")) return { icon: <AlertCircle size={14} />, bg: "var(--danger-bg)", fg: "var(--danger-tx)" };
-    if (a.includes("complet") || a.includes("filed") || a.includes("approv") || a.includes("paid") || a.includes("done")) return { icon: <CheckCircle size={14} />, bg: "var(--success-bg)", fg: "var(--success-tx)" };
-    return { icon: <Activity size={14} />, bg: "var(--accent-tint)", fg: "var(--accent)" };
-  }
+  const sorted = [...filings].sort((a, b) => +new Date(a.due_date) - +new Date(b.due_date)).slice(0, 6);
 
   // Firm health score (completions / total work)
   const totalUnits = filings.length + tasks.length;
@@ -224,7 +158,7 @@ export function AdminDashboardPremium() {
 
   return (
     <div className="prem-enter space-y-5">
-      {/* HERO — gradient wash + accent CTAs (same as employee/client) */}
+      {/* HERO â€” gradient wash + accent CTAs (same as employee/client) */}
       <section className="relative overflow-hidden rounded-2xl p-6 md:p-8" style={{ background: "var(--hero-bg)", border: "1px solid var(--hero-border)", color: "var(--hero-text)" }}>
         <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full" style={{ background: "radial-gradient(closest-side,color-mix(in srgb, var(--accent) 16%, transparent),transparent)" }} />
         <div aria-hidden className="pointer-events-none absolute -bottom-28 -left-16 h-64 w-64 rounded-full" style={{ background: "radial-gradient(closest-side,color-mix(in srgb, var(--accent-hover) 12%, transparent),transparent)" }} />
@@ -232,15 +166,15 @@ export function AdminDashboardPremium() {
         <div className="relative grid items-center gap-6 lg:grid-cols-[1.4fr_.9fr]">
           <div>
             <p className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em]" style={{ background: "linear-gradient(90deg,var(--accent-tint),color-mix(in srgb, var(--accent) 6%, transparent))", color: "var(--hero-chip-tx)" }}>
-              <Sparkles size={12} /> Firm command center · {clients.length} clients · FY 2026
+              <Sparkles size={12} /> Firm command center Â· {clients.length} clients Â· FY 2026
             </p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-[34px]" style={{ fontFamily: "var(--font-fraunces),Georgia,serif" }}>
               {greeting()}, Admin
             </h1>
             <p className="mt-2 max-w-xl text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
               {clients.length === 0 && openTasks.length === 0
-                ? "All clear — no clients or tasks yet."
-                : `${openTasks.length} open task${openTasks.length === 1 ? "" : "s"} · ${filings.filter((f) => isOverdue(String(f.status), f.due_date)).length} overdue filings · ${clients.length} active clients.`}
+                ? "All clear â€” no clients or tasks yet."
+                : `${openTasks.length} open task${openTasks.length === 1 ? "" : "s"} Â· ${filings.filter((f) => isOverdue(String(f.status), f.due_date)).length} overdue filings Â· ${clients.length} active clients.`}
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <Link href="/admin/tax-filings" className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold text-white transition-transform hover:-translate-y-0.5" style={{ background: "linear-gradient(135deg,var(--accent),var(--accent-hover))", boxShadow: "0 8px 20px color-mix(in srgb, var(--accent) 35%, transparent)" }}>
@@ -272,7 +206,7 @@ export function AdminDashboardPremium() {
         </div>
       </section>
 
-      {/* KPI STRIP — matches employee */}
+      {/* KPI STRIP â€” matches employee */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <PremKpi role="admin" label="Active clients" value={String(clients.length)} hint="Active clients" icon={<Users size={19} />} />
         <PremKpi role="admin" label="Due this month" value={String(dueThisMonth)} hint="Across all taxes" icon={<FileClock size={19} />} />
@@ -327,110 +261,29 @@ export function AdminDashboardPremium() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        {/* ---- NEW: Deadline tracker ---- */}
-        <PremCard
-          title="Deadline tracker"
-          sub={`${dlCounts.ov} overdue · ${dlCounts.soon} due in 7d · ${dlCounts.total} total`}
-          action={<Link href="/admin/tax-filings" className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-[var(--surface-muted)]" style={{ borderColor: "var(--border)", color: T.primary }}>View all <ChevronRight size={13} /></Link>}
-        >
-          {/* filter tabs */}
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {(["all", "overdue", "soon", "done"] as const).map((k) => (
-              <button key={k} onClick={() => setDlFilter(k)} className="rounded-full px-3 py-1.5 text-xs font-bold capitalize transition-all" style={dlFilter === k ? { background: T.primary, color: "#fff" } : { background: "var(--surface-muted)", color: "var(--text-2)" }}>
-                {k === "soon" ? "Due soon" : k}
-              </button>
-            ))}
-          </div>
-          {dlList.length === 0 ? <EmptyState icon={<Clock3 size={22} />} title={dlFilter === "all" ? "No upcoming deadlines" : `No ${dlFilter === "soon" ? "due-soon" : dlFilter} filings`} /> : (
-            <div className="max-h-[320px] space-y-2 overflow-y-auto pr-0.5">
-              {dlList.map((f) => {
-                const n = daysUntil(f.due_date);
-                const overdue = isOverdue(String(f.status), f.due_date);
-                const done = isComplete(String(f.status));
-                const tone = done ? "success" : overdue ? "danger" : (n ?? 99) <= 3 ? "warning" : "neutral";
-                const bar = done ? "var(--success-tx)" : overdue ? "var(--danger-tx)" : (n ?? 99) <= 3 ? "var(--warn-tx)" : T.primary;
-                const pct = done ? 100 : overdue ? 100 : n === null ? 0 : Math.max(8, Math.min(100, 100 - Math.max(0, n) * 10));
-                const d = new Date(`${f.due_date}T00:00:00`);
-                const day = Number.isNaN(+d) ? "—" : String(d.getDate()).padStart(2, "0");
-                const mon = Number.isNaN(+d) ? "" : d.toLocaleString("en", { month: "short" });
-                const initial = String(f.client_name ?? f.tax_type ?? "?").trim().charAt(0).toUpperCase() || "?";
-                return (
-                  <Link key={f.id} href="/admin/tax-filings" className="group block rounded-2xl border p-3 transition-all hover:-translate-y-px hover:shadow-md" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl border" style={{ borderColor: "var(--border)", background: overdue ? "var(--danger-bg)" : "var(--surface-muted)" }}>
-                        <span className="tnum text-base font-bold leading-none">{day}</span>
-                        <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--text-2)" }}>{mon}</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: T.primary }}>{initial}</span>
-                          <p className="truncate text-sm font-bold">{f.tax_type} · {f.period}</p>
-                        </div>
-                        <p className="mt-0.5 truncate text-xs" style={{ color: "var(--text-2)" }}>{String(f.client_name ?? "Unassigned client")} · due {f.due_date}</p>
-                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full" style={{ background: "var(--surface-muted)" }}>
-                          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: bar }} />
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end gap-1.5">
-                        <Badge tone={tone}>{done ? "Done" : dueLabel(f.due_date)}</Badge>
-                        <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" style={{ color: "var(--text-2)" }} />
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+        <PremCard title="Deadline tracker" sub="Next 6 by due date" action={<Link href="/admin/tax-filings" className="text-xs font-bold hover:underline" style={{ color: T.primary }}>View all â†’</Link>}>
+          {sorted.length === 0 ? <EmptyState icon={<Clock3 size={22} />} title="No upcoming deadlines" /> : (
+            <div className="space-y-2">
+              {sorted.map((f) => (
+                <Link key={f.id} href="/admin/tax-filings" className="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition-colors hover:bg-black/[0.02]" style={{ borderColor: "var(--border)" }}>
+                  <div className="min-w-0 flex-1"><p className="truncate font-bold">{f.tax_type} Â· {f.period}</p><p className="text-xs" style={{ color: "var(--text-2)" }}>{String(f.client_name ?? "").slice(0, 24)} Â· due {f.due_date}</p></div>
+                  <Badge tone={dueLabel(f.due_date).includes("overdue") ? "danger" : "warning"}>{dueLabel(f.due_date)}</Badge>
+                </Link>
+              ))}
             </div>
           )}
         </PremCard>
-        {/* ---- NEW: Recent activity ---- */}
-        <PremCard
-          title="Recent activity"
-          sub={activity.length ? `${activity.length} events · live firm feed` : "Latest firm actions"}
-          action={
-            <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold" style={{ background: "var(--success-bg)", color: "var(--success-tx)" }}>
-                <span className="relative flex h-2 w-2"><span className="absolute h-full w-full animate-ping rounded-full opacity-60" style={{ background: "var(--success-tx)" }} /><span className="h-2 w-2 rounded-full" style={{ background: "var(--success-tx)" }} /></span>
-                Live
-              </span>
-              <button onClick={() => downloadFile("taxdesk-activity.csv", toCSV(activity as unknown as Record<string, unknown>[]))} className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors hover:bg-[var(--surface-muted)]" style={{ borderColor: "var(--border)", color: T.primary }}><Download size={13} /></button>
-            </div>
-          }
-        >
+        <PremCard title="Recent activity" sub="Latest firm actions" action={<button onClick={() => downloadFile("taxdesk-filings.csv", toCSV(filings as unknown as Record<string, unknown>[]))} className="inline-flex items-center gap-1 text-xs font-bold hover:underline" style={{ color: T.primary }}><Download size={13} /> Export</button>}>
           {activity.length === 0 ? <EmptyState icon={<FileClock size={22} />} title="No activity yet" /> : (
-            <>
-              <div className="mb-3 flex flex-wrap gap-1.5">
-                {actTypes.map((t) => (
-                  <button key={t} onClick={() => setActFilter(t)} className="rounded-full px-3 py-1.5 text-xs font-bold capitalize transition-all" style={actFilter === t ? { background: T.primary, color: "#fff" } : { background: "var(--surface-muted)", color: "var(--text-2)" }}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <div className="relative max-h-[340px] space-y-0 overflow-y-auto pr-1">
-                <div aria-hidden className="absolute bottom-2 left-[22px] top-2 w-px" style={{ background: "var(--border)" }} />
-                {actList.map((a) => {
-                  const v = activityVisual(String(a.entity_type ?? ""), String(a.action ?? ""));
-                  const who = actorDisplayName(a, namesById, docUploader);
-                  const initial = String(who ?? "?").trim().charAt(0).toUpperCase() || "?";
-                  return (
-                    <div key={a.id} className="relative flex items-start gap-3 rounded-xl px-1 py-2.5 transition-colors hover:bg-black/[0.02]">
-                      <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2" style={{ background: v.bg, color: v.fg, borderColor: "var(--surface)" }}>
-                        {v.icon}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white" style={{ background: T.primary }}>{initial}</span>
-                          <p className="truncate text-[13px]"><span className="font-bold">{who}</span> <span style={{ color: "var(--text-2)" }}>{humanizeAction(a.action)}</span> <span className="inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-bold uppercase tracking-wide" style={{ background: "var(--surface-muted)", color: "var(--text-2)" }}>{a.entity_type}</span></p>
-                        </div>
-                        <p className="mt-1 flex items-center gap-1 pl-7 text-[11px]" style={{ color: "var(--text-2)" }}><Clock3 size={11} /> {timeAgo(a.created_at)} · {new Date(a.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <Link href="/admin/audit" className="mt-3 flex items-center justify-center gap-1 rounded-xl border py-2.5 text-xs font-bold transition-colors hover:bg-[var(--surface-muted)]" style={{ borderColor: "var(--border)", color: T.primary }}>
-                Open full audit trail <ArrowUpRight size={13} />
-              </Link>
-            </>
+            <div className="max-h-[260px] space-y-3 overflow-y-auto">
+              {activity.slice(0, 12).map((a) => (
+                <div key={a.id} className="flex items-start gap-3 text-sm">
+                  <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: T.primary }} />
+                  <div className="min-w-0"><span className="font-bold">{a.actor_name ?? "Someone"}</span> <span style={{ color: "var(--text-2)" }}>{a.action} {a.entity_type}</span>
+                    <p className="text-xs" style={{ color: "var(--text-2)" }}>{new Date(a.created_at).toLocaleString()}</p></div>
+                </div>
+              ))}
+            </div>
           )}
         </PremCard>
       </div>
@@ -439,7 +292,7 @@ export function AdminDashboardPremium() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  ADMIN INSIDE PAGES — premium wrappers (same shell as employee/client) */
+/*  ADMIN INSIDE PAGES â€” premium wrappers (same shell as employee/client) */
 /* ------------------------------------------------------------------ */
 
 export function AdminPageShell({ eyebrow, title, sub, actions, kpis, children, stats }: {
@@ -464,7 +317,7 @@ export function AdminFilingsPremium() {
     <AdminPageShell
       eyebrow="Compliance pipeline"
       title="Tax filings"
-      sub="Every return, its live 7-stage status and what happens next — firm-wide."
+      sub="Every return, its live 7-stage status and what happens next â€” firm-wide."
       stats={[{ v: String(f.filings.length), l: "Total" }, { v: `${pct}%`, l: "Done" }, { v: String(f.overdueFilings.length), l: "Overdue" }]}
       actions={<><PremBtn role="admin" href="/admin/tasks">Task center</PremBtn><PremBtn role="admin" href="/admin/documents" ghost>Documents</PremBtn></>}
       kpis={
@@ -487,12 +340,12 @@ export function AdminClientsPremium() {
     <AdminPageShell
       eyebrow="Portfolio"
       title="Clients"
-      sub="All clients across the firm — open a profile for details, tasks and quick actions."
+      sub="All clients across the firm â€” open a profile for details, tasks and quick actions."
       stats={[{ v: String(f.clients.length), l: "Clients" }, { v: String(f.openFilings.length), l: "Open filings" }, { v: String(f.open.length), l: "Open tasks" }]}
       actions={<><PremBtn role="admin" href="/admin/tasks">Add task</PremBtn><PremBtn role="admin" href="/admin/documents" ghost>Documents</PremBtn></>}
       kpis={
         <>
-          <PremKpi role="admin" label="Total clients" value={String(f.clients.length)} hint="Firm-wide" icon={<Users size={19} />} />
+          <PremKpi role="admin" label="Total clients" value={String(f.clients.length)} hint="Firm-wide" icon={<Users size={19} />} spark={[2, 3, 4, 5, Math.max(5, f.clients.length)]} />
           <PremKpi role="admin" label="Open filings" value={String(f.openFilings.length)} hint="Across all clients" icon={<FileText size={19} />} />
           <PremKpi role="admin" label="Open tasks" value={String(f.open.length)} hint="Needs action" icon={<Briefcase size={19} />} />
           <PremKpi role="admin" label="Overdue" value={String(f.overdueFilings.length + f.overdueTasks.length)} hint="Act first" icon={<CircleAlert size={19} />} />
@@ -510,7 +363,7 @@ export function AdminTasksPremium() {
     <AdminPageShell
       eyebrow="Action centre"
       title="Task management"
-      sub="Kanban, priorities and deadlines — everything firm-wide in one board."
+      sub="Kanban, priorities and deadlines â€” everything firm-wide in one board."
       stats={[{ v: String(f.open.length), l: "Open" }, { v: String(f.dueSoonTasks.length), l: "Due soon" }, { v: `${f.tasksPct}%`, l: "Done" }]}
       actions={<><PremBtn role="admin" href="/admin/tax-filings">Filings</PremBtn><PremBtn role="admin" href="/admin/performance" ghost>Performance</PremBtn></>}
       kpis={
@@ -533,7 +386,7 @@ export function AdminDocumentsPremium() {
     <AdminPageShell
       eyebrow="Review workspace"
       title="Documents"
-      sub="Review, accept or reject client uploads — versions and audit trail stay linked."
+      sub="Review, accept or reject client uploads â€” versions and audit trail stay linked."
       stats={[{ v: String(f.docsCount), l: "Files" }, { v: String(f.openFilings.length), l: "Open filings" }, { v: `${f.score}`, l: "Score" }]}
       actions={<><PremBtn role="admin" href="/admin/tax-filings">Filings</PremBtn><PremBtn role="admin" href="/admin/clients" ghost>Clients</PremBtn></>}
       kpis={
@@ -556,7 +409,7 @@ export function AdminPaymentsPremium() {
     <AdminPageShell
       eyebrow="Billing"
       title="Payments"
-      sub="Firm invoices, GST challans and receipts — export anything in one tap."
+      sub="Firm invoices, GST challans and receipts â€” export anything in one tap."
       stats={[{ v: formatMoney(f.outstanding), l: "Due" }, { v: formatMoney(f.paid), l: "Paid" }, { v: String(f.payments.length), l: "Invoices" }]}
       actions={
         <>
@@ -602,34 +455,11 @@ export function AdminMessagesPremium() {
     <AdminPageShell
       eyebrow="Inbox"
       title="Messages"
-      sub="A direct line to your team and clients — replies land here, not in email threads."
+      sub="A direct line to your team and clients â€” replies land here, not in email threads."
       stats={[{ v: String(f.clients.length), l: "Clients" }, { v: String(f.open.length), l: "Open tasks" }, { v: String(f.dueWeek), l: "Due wk" }]}
       actions={<Link href="/admin/clients" className="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-bold" style={{ borderColor: "var(--border)", color: "var(--accent)" }}><Phone size={14} /> View clients</Link>}
     >
       <MessagesView embedded />
-    </AdminPageShell>
-  );
-}
-
-export function AdminTeamPremium() {
-  const f = useAdminFacts();
-  return (
-    <AdminPageShell
-      eyebrow="Team & roles · live directory"
-      title="Team & Performance"
-      sub="Pending requests, new accounts and every member — approve, decline or revoke, all table-wise in one place."
-      stats={[{ v: String(f.users.length), l: "Total users" }, { v: String(f.pending), l: "Pending" }, { v: String(f.employees), l: "Employees" }]}
-      actions={<><PremBtn role="admin" href="/admin/performance">Performance</PremBtn><PremBtn role="admin" href="/admin/clients" ghost>Clients</PremBtn></>}
-      kpis={
-        <>
-          <StatKpi label="Total users" value={String(f.users.length)} hint="Firm-wide logins" icon={<Users size={18} />} />
-          <StatKpi label="Pending approvals" value={String(f.pending)} hint="Review them today" icon={<Clock3 size={18} />} />
-          <StatKpi label="Active employees" value={String(f.employees)} hint="Carrying the workload" icon={<CheckCircle2 size={18} />} />
-          <StatKpi label="Overdue items" value={String(f.overdueFilings.length + f.overdueTasks.length)} hint="Act first" icon={<CircleAlert size={18} />} />
-        </>
-      }
-    >
-      <TeamDirectory />
     </AdminPageShell>
   );
 }
@@ -639,21 +469,39 @@ export function AdminPerformancePremium() {
   const rate = f.filings.length ? Math.round((f.doneFilings.length / f.filings.length) * 100) : 0;
   return (
     <AdminPageShell
-      eyebrow="Growth · live scoreboard"
-      title="Performance"
-      sub="Firm score, podium, throughput and the attention queue — everything you need for the Monday review."
+      eyebrow="Growth"
+      title="My performance"
+      sub="Firm-wide completion, throughput and risk â€” live from every scope."
       stats={[{ v: String(f.doneFilings.length), l: "Filed" }, { v: String(f.done.length), l: "Tasks done" }, { v: `${f.score}%`, l: "Score" }]}
-      actions={<><PremBtn role="admin" href="/admin/reports">Reports</PremBtn><PremBtn role="admin" href="/admin/team" ghost>Team</PremBtn></>}
+      actions={<><PremBtn role="admin" href="/admin/reports">Reports</PremBtn><PremBtn role="admin" href="/admin/tasks" ghost>Tasks</PremBtn></>}
       kpis={
         <>
-          <StatKpi label="Firm score" value={`${f.score}%`} hint="Completion health" icon={<BadgeCheck size={18} />} spark={[40, 55, 60, 75, Math.max(75, f.score)]} />
-          <StatKpi label="Tasks done" value={String(f.done.length)} hint="Closed firm-wide" icon={<CheckCircle2 size={18} />} />
-          <StatKpi label="On-time rate" value={`${rate}%`} hint="Across firm scope" icon={<Gauge size={18} />} />
-          <StatKpi label="Overdue load" value={String(f.overdueTasks.length + f.overdueFilings.length)} hint={f.overdueTasks.length + f.overdueFilings.length ? "Clear to improve" : "Inbox zero"} icon={<CircleAlert size={18} />} />
+          <PremKpi role="admin" label="Filings done" value={String(f.doneFilings.length)} hint="Completed returns" icon={<BadgeCheck size={19} />} />
+          <PremKpi role="admin" label="Tasks done" value={String(f.done.length)} hint="Closed firm-wide" icon={<CheckCircle2 size={19} />} />
+          <PremKpi role="admin" label="On-time rate" value={`${rate}%`} hint="Across firm scope" icon={<Gauge size={19} />} />
+          <PremKpi role="admin" label="Overdue load" value={String(f.overdueTasks.length + f.overdueFilings.length)} hint="Clear to improve" icon={<CircleAlert size={19} />} />
         </>
       }
     >
-      <PerformanceBoard role="admin" />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+        <PremCard title="Completion ring" sub="Tasks closed firm-wide">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="h-[128px] w-[128px] shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadialBarChart innerRadius="70%" outerRadius="100%" data={[{ name: "x", value: f.tasksPct }]} startAngle={90} endAngle={-270}>
+                  <RadialBar dataKey="value" cornerRadius={8} fill={T.primary} background={{ fill: "var(--surface-muted)" }} />
+                </RadialBarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="min-w-0">
+              <p className="tnum text-3xl font-bold leading-none">{f.tasksPct}%</p>
+              <p className="mt-1 text-xs font-semibold leading-snug" style={{ color: "var(--text-2)" }}>{f.done.length}/{f.tasks.length} tasks complete</p>
+              <Link href="/admin/tasks" className="mt-2 inline-flex items-center gap-1 text-xs font-bold hover:underline" style={{ color: T.primary }}>Close more tasks â†’</Link>
+            </div>
+          </div>
+        </PremCard>
+        <div className="min-w-0"><PerformanceView role="admin" /></div>
+      </div>
     </AdminPageShell>
   );
 }
@@ -665,7 +513,7 @@ export function AdminReportsPremium() {
     <AdminPageShell
       eyebrow="Insights"
       title="Reports & analytics"
-      sub="Firm-wide completion, risk, workload and revenue — live-computed and exportable."
+      sub="Firm-wide completion, risk, workload and revenue â€” live-computed and exportable."
       stats={[{ v: `${rate}%`, l: "Complete" }, { v: String(f.overdueFilings.length), l: "At risk" }, { v: formatMoney(f.paid), l: "Collected" }]}
       actions={<><PremBtn role="admin" href="/admin/performance">Performance</PremBtn><PremBtn role="admin" href="/admin/tax-filings" ghost>Filings</PremBtn></>}
       kpis={
@@ -688,7 +536,7 @@ export function AdminSettingsPremium() {
     <AdminPageShell
       eyebrow="Configuration"
       title="Settings"
-      sub="Firm-wide settings — tax rules, integrations, billing, team and security."
+      sub="Firm-wide settings â€” tax rules, integrations, billing, team and security."
       stats={[{ v: String(f.jurisdictions.length), l: "Tax rules" }, { v: String(f.taxTypes.length), l: "Tax types" }, { v: String(f.open.length), l: "Open items" }]}
       actions={<PremBtn role="admin" href="/admin/team">Team & roles</PremBtn>}
       kpis={
@@ -706,9 +554,9 @@ export function AdminSettingsPremium() {
 }
 
 const ADMIN_HELP_FAQS = [
-  { q: "How do I approve a new login?", a: "Open Team & Performance → Pending approvals → Approve or Reject with a reason. The new user can log in instantly." },
-  { q: "How do I escalate a risky filing?", a: "Open Tax Filings → find the row → Escalate. Open items land on the Escalations page for triage." },
-  { q: "How do I review a document?", a: "Open Documents → Open → Accept or Reject with a reason. Rejections go back to the client with your note." },
+  { q: "How do I approve a new login?", a: "Open Team & Performance â†’ Pending approvals â†’ Approve or Reject with a reason. The new user can log in instantly." },
+  { q: "How do I escalate a risky filing?", a: "Open Tax Filings â†’ find the row â†’ Escalate. Open items land on the Escalations page for triage." },
+  { q: "How do I review a document?", a: "Open Documents â†’ Open â†’ Accept or Reject with a reason. Rejections go back to the client with your note." },
   { q: "Who can see firm data?", a: "Admins see everything. Employees see only assigned clients; clients see only their own filings, docs and tasks." },
 ];
 
@@ -718,7 +566,7 @@ export function AdminHelpPremium() {
     <AdminPageShell
       eyebrow="Support center"
       title="Help & support"
-      sub="All employee and client tickets — triage, assign, reply and close."
+      sub="All employee and client tickets â€” triage, assign, reply and close."
       stats={[{ v: String(f.ticketOpen), l: "Open" }, { v: String(f.ticketResolved), l: "Resolved" }, { v: String(f.ticketTotal), l: "Total" }]}
       actions={<span className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold" style={{ background: T.soft, color: T.primary }}><LifeBuoy size={14} /> {f.ticketOpen} open</span>}
       kpis={
@@ -749,14 +597,14 @@ export function AdminEscalationsPremium() {
     <AdminPageShell
       eyebrow="Risk & compliance"
       title="Escalations"
-      sub="Open escalations raised by employees — confirm resolve or reassign."
+      sub="Open escalations raised by employees â€” confirm resolve or reassign."
       stats={[{ v: String(f.escOpen), l: "Open" }, { v: String(f.escResolved), l: "Resolved" }, { v: String(f.affectedClients), l: "Clients" }]}
       actions={<PremBtn role="admin" href="/admin/clients">View clients</PremBtn>}
       kpis={
         <>
           <PremKpi role="admin" label="Open escalations" value={String(f.escOpen)} hint="Needs attention" icon={<AlertTriangle size={19} />} />
           <PremKpi role="admin" label="Resolved" value={String(f.escResolved)} hint="Confirmed" icon={<CheckCircle2 size={19} />} />
-          <PremKpi role="admin" label="Oldest open" value={f.escOpen ? `${f.oldestOpenDays}d` : "—"} hint="Days since raised" icon={<Clock3 size={19} />} />
+          <PremKpi role="admin" label="Oldest open" value={f.escOpen ? `${f.oldestOpenDays}d` : "â€”"} hint="Days since raised" icon={<Clock3 size={19} />} />
           <PremKpi role="admin" label="Affected clients" value={String(f.affectedClients)} hint="At risk" icon={<Users size={19} />} />
         </>
       }
@@ -787,27 +635,5 @@ export function AdminEscalationsPremium() {
     </AdminPageShell>
   );
 }
-
-export function AdminAuditPremium() {
-  const a = useAuditFacts();
-  return (
-    <AdminPageShell
-      eyebrow="Compliance"
-      title="Audit trail"
-      sub="Every audited action across the firm — approvals, filings, uploads, payments and status changes, newest first."
-      stats={[{ v: String(a.total), l: "Events" }, { v: String(a.today), l: "Today" }, { v: String(a.actors), l: "Actors" }]}
-      actions={<><PremBtn role="admin" href="/admin/reports">Reports</PremBtn><PremBtn role="admin" href="/admin/dashboard" ghost>Dashboard</PremBtn></>}
-      kpis={
-        <>
-          <StatKpi label="Total events" value={String(a.total)} hint="Last 500 audited" icon={<Activity size={18} />} />
-          <StatKpi label="Last 24 hours" value={String(a.today)} hint="Fresh activity" icon={<CalendarDays size={18} />} />
-          <StatKpi label="Active actors" value={String(a.actors)} hint="People + system" icon={<Users size={18} />} />
-          <StatKpi label="Entity types" value={String(a.types)} hint="Across the firm" icon={<FileClock size={18} />} />
-        </>
-      }
-    >
-      <AuditTrailView />
-    </AdminPageShell>
-  );
-}
 export { useAdminFacts };
+

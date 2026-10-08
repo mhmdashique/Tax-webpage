@@ -164,10 +164,13 @@ export async function POST(req: Request) {
   }
 
   if (synced + adopted > 0) {
+    const { data: adminRow } = await svc.from("users").select("name").eq("id", adminId).maybeSingle();
+    const adminName = (adminRow as { name?: string } | null)?.name?.trim() || "Admin";
     await svc.from("activity_log").insert([{
       firm_id: firmId,
       actor_id: adminId,
-      action: "synced_signups",
+      actor_name: adminName,
+      action: `synced signups by ${adminName}`,
       entity_type: "user",
       entity_id: null,
     }]).then(() => {}, () => {});

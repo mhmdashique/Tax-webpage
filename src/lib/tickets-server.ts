@@ -35,9 +35,9 @@ export async function logHistory(
   }]).then(() => {}, () => {});
 }
 
-export async function logActivity(svc: Svc, firmId: string, actorId: string, action: string, ticketId: string) {
+export async function logActivity(svc: Svc, firmId: string, actorId: string, actorName: string, action: string, ticketId: string) {
   await svc.from("activity_log").insert([{
-    firm_id: firmId, actor_id: actorId, action, entity_type: "ticket", entity_id: ticketId,
+    firm_id: firmId, actor_id: actorId, actor_name: actorName, action, entity_type: "ticket", entity_id: ticketId,
   }]).then(() => {}, () => {});
 }
 

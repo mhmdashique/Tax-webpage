@@ -8,6 +8,7 @@ import { usePendingCount } from "./approvals";
 import { ThemeToggle, Modal, Badge } from "./ui";
 import { ClientMobileSidebar, ClientSidebar } from "./client-sidebar";
 import { EmployeeMobileSidebar, EmployeeSidebar } from "./employee-sidebar";
+import { AdminMobileSidebar, AdminSidebar } from "./admin-sidebar";
 import { useFilings, useTasks, usePayments, useMessages, useCurrentUser } from "@/lib/hooks";
 import { isOverdue } from "@/lib/lifecycle";
 import {
@@ -35,6 +36,7 @@ const ICONS: Record<string, React.ReactNode> = {
   history: <History size={20} />,
   contact: <Phone size={20} />,
   sign: <PenLine size={20} />,
+  audit: <History size={20} />,
 };
 
 export function navFor(role: "admin" | "employee" | "client"): { menu: NavItem[]; support: NavItem[] } {
@@ -53,6 +55,7 @@ export function navFor(role: "admin" | "employee" | "client"): { menu: NavItem[]
         { href: `${base}/team`, label: "Team & Performance", icon: ic("team") },
         { href: `${base}/performance`, label: "My Performance", icon: ic("performance") },
         { href: `${base}/reports`, label: "Reports & Analytics", icon: ic("reports") },
+        { href: `${base}/audit`, label: "Audit Trail", icon: ic("audit") },
         { href: `${base}/settings`, label: "Settings", icon: ic("settings") },
       ],
       support: [
@@ -287,48 +290,15 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
           onLogout={handleLogout}
         />
       ) : (
-      <aside className="sticky top-0 hidden h-screen flex-col md:flex" style={{ width: collapsed ? 72 : 264, background: "var(--sidebar-bg)", borderRight: "1px solid var(--border)" }}>
-        <div className="flex h-16 items-center gap-2 px-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl font-bold text-white" style={{ background: ROLE_COLOR[role] }}>T</div>
-          {!collapsed && (
-            <div>
-              <p className="text-sm font-bold leading-none">TaxDesk</p>
-              <p className="text-[11px]" style={{ color: "var(--text-2)" }}>FilePilot OS</p>
-            </div>
-          )}
-        </div>
-        <div className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
-          <div>
-            {!collapsed && <p className="eyebrow px-3 pb-2 font-bold">Menu</p>}
-            <nav className="space-y-1">{renderNav(menuWithBadges)}</nav>
-          </div>
-          <div>
-            {!collapsed && <p className="eyebrow px-3 pb-2 font-bold">Support</p>}
-            <nav className="space-y-1">{renderNav(support)}</nav>
-          </div>
-        </div>
-        <div className="space-y-3 border-t p-3" style={{ borderColor: "var(--border)" }}>
-          <div className="flex items-center justify-between">
-            {!collapsed && <span className="text-xs" style={{ color: "var(--text-2)" }}>Theme</span>}
-            <ThemeToggle />
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-white" style={{ background: ROLE_COLOR[role], boxShadow: "0 0 0 2px color-mix(in srgb, var(--accent) 33%, transparent)" }}>
-              {name.slice(0, 1).toUpperCase()}
-            </div>
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">{name}</p>
-                <span className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "color-mix(in srgb, var(--accent) 13%, transparent)", color: "var(--accent)" }}>{ROLE_CHIP[role]}</span>
-              </div>
-            )}
-            {!collapsed && (
-              <button onClick={handleLogout} className="btn-ghost p-2" aria-label="Logout"><LogOut size={15} /></button>
-            )}
-          </div>
-          <button onClick={() => setCollapsed((c) => !c)} className="btn-ghost w-full py-1.5 text-xs">{collapsed ? "»" : "« Collapse"}</button>
-        </div>
-      </aside>
+        <AdminSidebar
+          name={name}
+          pathname={pathname}
+          menuWithBadges={menuWithBadges}
+          support={support}
+          collapsed={collapsed}
+          onToggleCollapse={() => setCollapsed((c) => !c)}
+          onLogout={handleLogout}
+        />
       )}
 
       {/* Mobile drawer — premium UI for client + employee */}
@@ -352,17 +322,15 @@ export function DashboardShell({ role, name, children, title }: { role: "admin" 
           onLogout={handleLogout}
         />
       )}
-      {mobileOpen && role !== "client" && role !== "employee" && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 flex h-full w-72 flex-col p-4" style={{ background: "var(--sidebar-bg)" }}>
-            <nav className="space-y-1 overflow-y-auto">{renderNav([...menuWithBadges, ...support])}</nav>
-            <div className="mt-auto flex items-center justify-between pt-4">
-              <ThemeToggle />
-              <button onClick={handleLogout} className="btn-ghost px-3 py-2 text-sm">Logout</button>
-            </div>
-          </aside>
-        </div>
+      {mobileOpen && role === "admin" && (
+        <AdminMobileSidebar
+          name={name}
+          pathname={pathname}
+          menuWithBadges={menuWithBadges}
+          support={support}
+          onClose={() => setMobileOpen(false)}
+          onLogout={handleLogout}
+        />
       )}
 
       <div className="workspace-body flex min-w-0 flex-1 flex-col">

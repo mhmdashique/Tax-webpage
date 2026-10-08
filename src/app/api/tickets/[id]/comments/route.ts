@@ -35,7 +35,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   await svc.from("ticket_history").insert([{
     ticket_id: id, action: parsed.data.is_internal ? "internal_note" : "replied", changed_by: viewer.id,
   }]).then(() => {}, () => {});
-  await logActivity(svc, viewer.firmId, viewer.id, `${parsed.data.is_internal ? "noted on" : "replied to"} ticket ${ticket.ticket_no}`, id);
+  await logActivity(svc, viewer.firmId, viewer.id, viewer.name, `${parsed.data.is_internal ? "noted on" : "replied to"} ticket ${ticket.ticket_no} by ${viewer.name}`, id);
 
   // Notify the other side (never leak internal notes to the client)
   const targets = new Set<string>();
